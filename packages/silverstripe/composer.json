@@ -49,9 +49,6 @@
       "Talaria\\Tests\\": "tests/"
     }
   },
-  "extra": {
-    "installer-name": "talaria-logging"
-  },
   "scripts": {
     "test": "phpunit"
   },

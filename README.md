@@ -1,25 +1,30 @@
 # Talaria PHP SDKs
 
-Composer monorepo for the official PHP SDKs.
+Official Composer packages for [Talaria](https://www.newtalaria.com) — exceptions, application logs, and optional APM traces.
 
-| Package | Composer name | Path |
+| If you are building… | Install | Docs |
 | --- | --- | --- |
-| Core | [`talaria/talaria`](packages/talaria) | `packages/talaria` |
-| Silverstripe | [`talaria/silverstripe`](packages/silverstripe) | `packages/silverstripe` |
-| Laravel | [`talaria/laravel`](packages/laravel) | `packages/laravel` |
-| Alias | [`talaria/logging`](packages/logging) | metapackage → Silverstripe |
+| A Silverstripe 4.13+ / 5 / 6 site | [`talaria/silverstripe`](packages/silverstripe) | [Guide](https://www.newtalaria.com/docs/sdk/silverstripe) |
+| A Laravel 10 / 11 / 12 app | [`talaria/laravel`](packages/laravel) | [Guide](https://www.newtalaria.com/docs/sdk/laravel) |
+| Plain PHP, Symfony, or another framework | [`talaria/talaria`](packages/talaria) | [Guide](https://www.newtalaria.com/docs/sdk/php) |
+
+Each adapter depends on the core package. You do not need to require `talaria/talaria` yourself when using Silverstripe or Laravel.
 
 ```bash
-composer require talaria/talaria
 composer require talaria/silverstripe
 composer require talaria/laravel
+composer require talaria/talaria
 ```
 
-Source: [github.com/newtalaria/talaria-php-sdk](https://github.com/newtalaria/talaria-php-sdk)
+Source: [github.com/newtalaria/talaria-php-sdk](https://github.com/newtalaria/talaria-php-sdk) · Dashboard: [one.newtalaria.com](https://one.newtalaria.com)
 
-Docs: [PHP](https://www.newtalaria.com/docs/sdk/php) · [Silverstripe](https://www.newtalaria.com/docs/sdk/silverstripe) · [Laravel](https://www.newtalaria.com/docs/sdk/laravel)
+## What you get
 
-Packagist (after the first tag): submit each subdirectory from this repo — `packages/talaria`, `packages/silverstripe`, `packages/laravel`, `packages/logging`. That claims the `talaria` vendor. The first package you submit should be `talaria/talaria`.
+- Batched ingest to `/events/ingestBatch` and (when tracing is on) `/spans/ingestBatch`
+- Project API key auth (`X-API-Key`, `tal_live_…`)
+- Server-side fingerprinting — the SDK never computes issue groups
+- Tracing **off** until you opt in (`enableTracing` / `tracesSampleRate`)
+- PSR-3 `Talaria\Logger` on the core package; framework adapters wire exceptions, HTTP, and databases for you
 
 ## Develop
 
@@ -28,3 +33,7 @@ cd packages/talaria && composer update && composer test && composer phpstan
 cd ../silverstripe && composer config repositories.talaria path ../talaria && composer update && composer test
 cd ../laravel && composer config repositories.talaria path ../talaria && composer update && composer test
 ```
+
+## License
+
+MIT

@@ -28,7 +28,6 @@ App → TalariaClient
 | `packages/talaria/` | `talaria/talaria` | Framework-agnostic SDK (`Talaria\`) |
 | `packages/silverstripe/` | `talaria/silverstripe` | Silverstripe vendormodule (`Talaria\SilverStripe\`) |
 | `packages/laravel/` | `talaria/laravel` | Laravel adapter (`Talaria\Laravel\`) |
-| `packages/logging/` | `talaria/logging` | Metapackage alias → silverstripe |
 
 ## Vocabulary
 

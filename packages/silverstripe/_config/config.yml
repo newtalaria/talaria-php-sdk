@@ -1,5 +1,5 @@
 ---
-Name: talaria-logging
+Name: talaria
 After:
   - '#corelogging'
 ---

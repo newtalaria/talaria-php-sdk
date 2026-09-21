@@ -1,7 +1,7 @@
 ---
-Name: talaria-logging-browser
+Name: talaria-browser
 After:
-  - '#talaria-logging'
+  - '#talaria'
 ---
 SilverStripe\Admin\LeftAndMain:
   extensions:

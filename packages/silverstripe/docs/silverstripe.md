@@ -59,8 +59,8 @@ vendor/bin/sake dev/build flush=1
 ---
 Name: app-talaria
 After:
-  - '#talaria-logging'
-  - '#talaria-logging-browser'
+  - '#talaria'
+  - '#talaria-browser'
 ---
 Talaria\SilverStripe\Config:
   minLevel: warning
@@ -80,12 +80,12 @@ Talaria\SilverStripe\Config:
   # tracesSampleRate: 0.1
   enableBrowserCms: true
   enableBrowserFrontend: true
-  browserSdkVersion: '0.1.21'
+  browserSdkVersion: '0.1.25'
   browserReplaysSessionSampleRate: 0
   browserReplaysOnErrorSampleRate: 1.0
 ```
 
-YAML `minLevel` (default **`warning`**) is the **global default/root**: the Monolog handler threshold and the shared `TalariaClient` default. Monolog stays at that global default only. Scoped `Talaria\Logger` overrides (and named `loggers`) may be more verbose unless `enforceDefaultLevel: true`. See [logging-levels.md](logging-levels.md). Browser inject receives the same `minLevel` / `enforceDefaultLevel` / `loggers`.
+YAML `minLevel` (default **`warning`**) is the **global default/root**: the Monolog handler threshold and the shared `TalariaClient` default. Monolog stays at that global default only. Scoped `Talaria\Logger` overrides (and named `loggers`) may be more verbose unless `enforceDefaultLevel: true`. See [logging-levels.md](../../talaria/docs/logging-levels.md). Browser inject receives the same `minLevel` / `enforceDefaultLevel` / `loggers`.
 
 ### Tracing (APM)
 
@@ -371,7 +371,7 @@ $client->addProcessor(static function (array $bag): array {
 });
 ```
 
-For apps that construct their own client (plain PHP), use init `beforeSend` to redact or drop events — see the [main README](../README.md).
+For apps that construct their own client (plain PHP), use init `beforeSend` to redact or drop events — see the [core README](../../talaria/README.md).
 
 ---
 
@@ -394,7 +394,7 @@ With the same env vars, the module can load [`@newtalaria/browser`](https://www.
 - CMS admin (`LeftAndMain`) when `enableBrowserCms` is true  
 - Public pages (`ContentController`) when `enableBrowserFrontend` is true  
 
-Pin the npm version with `browserSdkVersion` (default **`0.1.21`**). Replay session sampling defaults to off; on-error clips can be enabled via YAML.
+Pin the npm version with `browserSdkVersion` (default **`0.1.25`**). Replay session sampling defaults to off; on-error clips can be enabled via YAML.
 
 Details: [`client/README.md`](../client/README.md). If public pages do not use `ContentController`, apply `Talaria\SilverStripe\FrontendExtension` on your page controller.
 
@@ -411,4 +411,4 @@ Details: [`client/README.md`](../client/README.md). If public pages do not use `
 | No traces / waterfalls | Tracing is off by default — set `TALARIA_ENABLE_TRACING=true` or YAML `enableTracing: true`, then `sake dev/build flush=1`. Errors are always sampled; successful requests follow `tracesSampleRate` (default 0.1) |
 | Browser SDK missing on frontend | `enableBrowserFrontend`, `ContentController` / `FrontendExtension`, and `TALARIA_BROWSER_DSN` if needed |
 
-More: [PHP SDK README](../README.md) · [www.newtalaria.com/docs/sdk/silverstripe](https://www.newtalaria.com/docs/sdk/silverstripe)
+More: [PHP SDK README](../../talaria/README.md) · [www.newtalaria.com/docs/sdk/silverstripe](https://www.newtalaria.com/docs/sdk/silverstripe)

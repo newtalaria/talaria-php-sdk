@@ -52,4 +52,4 @@ PHPDoc; cast with `(string) $message` at runtime.
 - Scoped loggers inherit client `minLevel` as default; assigned `minLevel` may raise or lower unless `enforceDefaultLevel` is true
 - Direct client captures always respect client `minLevel`; logger path applies client floor only when enforcing
 - Capture enqueues only — network I/O happens on queue drain
-- See `docs/logging-levels.md` for hierarchy, enforcement, and migration
+- See `packages/talaria/docs/logging-levels.md` for hierarchy, enforcement, and migration
