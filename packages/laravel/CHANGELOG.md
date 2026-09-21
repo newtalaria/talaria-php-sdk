@@ -14,4 +14,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Exception reporting, request SERVER spans, Eloquent/query CLIENT spans, queue producer/consumer, HTTP client + `traceparent`, Artisan spans, `talaria` log channel, and optional Auth `userId`.
 - Octane request/task/tick reset + flush; Horizon attributes; Livewire component child spans.
 
-[1.0.0]: https://github.com/newtalaria/talaria-php-sdk/releases/tag/laravel-1.0.0
+[1.0.0]: https://packagist.org/packages/talaria/laravel#1.0.0

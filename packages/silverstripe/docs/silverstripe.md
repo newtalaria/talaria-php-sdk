@@ -1,6 +1,6 @@
 # Silverstripe guide
 
-Set up Talaria on **Silverstripe 4.13+ / 5 / 6** (PHP **8.1+**) with `talaria/silverstripe`. That package installs the core PHP SDK (`talaria/talaria`) and the Silverstripe module (Monolog handler, Injector wiring, optional browser inject).
+Set up Talaria on **Silverstripe 4.13+ / 5 / 6** (PHP **8.1+**) with [`talaria/silverstripe`](https://packagist.org/packages/talaria/silverstripe). That package installs the core PHP SDK ([`talaria/talaria`](https://packagist.org/packages/talaria/talaria)) and the Silverstripe module (Monolog handler, Injector wiring, optional browser inject).
 
 You can instrument your app in two ways. They share the same credentials and can run together.
 

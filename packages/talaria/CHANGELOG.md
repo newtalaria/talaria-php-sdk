@@ -15,4 +15,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `TalariaClient::resetRequestState()` for long-lived workers (Octane, Horizon, queues).
 - Event URL sanitization (query values stripped).
 
-[1.0.0]: https://github.com/newtalaria/talaria-php-sdk/releases/tag/talaria-1.0.0
+[1.0.0]: https://packagist.org/packages/talaria/talaria#1.0.0

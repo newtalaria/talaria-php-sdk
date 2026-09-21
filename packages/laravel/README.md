@@ -5,7 +5,7 @@
 
 Laravel 10 / 11 / 12 adapter for [Talaria](https://www.newtalaria.com). Installs [`talaria/talaria`](https://packagist.org/packages/talaria/talaria) and wires exceptions, logs, and optional tracing — requests, Eloquent, queues, HTTP client, Artisan, Octane, Horizon, and Livewire.
 
-**Docs:** [Laravel guide](https://www.newtalaria.com/docs/sdk/laravel) · [Dashboard](https://one.newtalaria.com)
+**Packagist:** [talaria/laravel](https://packagist.org/packages/talaria/laravel) · **Docs:** [Laravel guide](https://www.newtalaria.com/docs/sdk/laravel) · [Dashboard](https://one.newtalaria.com)
 
 ## Install
 

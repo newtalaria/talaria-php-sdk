@@ -10,7 +10,7 @@ Events queue in memory and flush on batch size, max age, or process shutdown. Fi
 
 Building a **Silverstripe** site? Install [`talaria/silverstripe`](https://packagist.org/packages/talaria/silverstripe) instead. Building **Laravel**? Install [`talaria/laravel`](https://packagist.org/packages/talaria/laravel). Both pull this package and wire the framework for you.
 
-**Docs:** [PHP SDK](https://www.newtalaria.com/docs/sdk/php) · [Silverstripe](https://www.newtalaria.com/docs/sdk/silverstripe) · [Laravel](https://www.newtalaria.com/docs/sdk/laravel) · [Dashboard](https://one.newtalaria.com)
+**Packagist:** [talaria/talaria](https://packagist.org/packages/talaria/talaria) · **Docs:** [PHP SDK](https://www.newtalaria.com/docs/sdk/php) · [Silverstripe](https://www.newtalaria.com/docs/sdk/silverstripe) · [Laravel](https://www.newtalaria.com/docs/sdk/laravel) · [Dashboard](https://one.newtalaria.com)
 
 ## Install
 

@@ -5,7 +5,7 @@
 
 Silverstripe 4.13+ / 5 / 6 adapter for [Talaria](https://www.newtalaria.com). Installs [`talaria/talaria`](https://packagist.org/packages/talaria/talaria) and wires Monolog, Injector, optional browser SDK inject, and request / MySQL / Guzzle / QueuedJobs tracing.
 
-**Docs:** [Silverstripe guide](https://www.newtalaria.com/docs/sdk/silverstripe) · [Full walkthrough](docs/silverstripe.md) · [Dashboard](https://one.newtalaria.com)
+**Packagist:** [talaria/silverstripe](https://packagist.org/packages/talaria/silverstripe) · **Docs:** [Silverstripe guide](https://www.newtalaria.com/docs/sdk/silverstripe) · [Full walkthrough](docs/silverstripe.md) · [Dashboard](https://one.newtalaria.com)
 
 ## Install
 

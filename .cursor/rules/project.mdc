@@ -25,9 +25,9 @@ App → TalariaClient
 
 | Path | Composer | Role |
 | ---- | -------- | ---- |
-| `packages/talaria/` | `talaria/talaria` | Framework-agnostic SDK (`Talaria\`) |
-| `packages/silverstripe/` | `talaria/silverstripe` | Silverstripe vendormodule (`Talaria\SilverStripe\`) |
-| `packages/laravel/` | `talaria/laravel` | Laravel adapter (`Talaria\Laravel\`) |
+| `packages/talaria/` | [`talaria/talaria`](https://packagist.org/packages/talaria/talaria) | Framework-agnostic SDK (`Talaria\`); Packagist mirror `newtalaria/talaria-php` |
+| `packages/silverstripe/` | [`talaria/silverstripe`](https://packagist.org/packages/talaria/silverstripe) | Silverstripe vendormodule (`Talaria\SilverStripe\`); mirror `newtalaria/talaria-silverstripe` |
+| `packages/laravel/` | [`talaria/laravel`](https://packagist.org/packages/talaria/laravel) | Laravel adapter (`Talaria\Laravel\`); mirror `newtalaria/talaria-laravel` |
 
 ## Vocabulary
 

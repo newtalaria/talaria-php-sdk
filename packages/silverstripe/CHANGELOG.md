@@ -12,4 +12,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - First release as `talaria/silverstripe` (Silverstripe 4.13+ / 5 / 6 vendormodule) depending on `talaria/talaria`.
 - Injector + Monolog (1/2 vs 3 handlers), browser SDK inject, request/MySQL/Guzzle/QueuedJobs tracing YAML.
 
-[1.0.0]: https://github.com/newtalaria/talaria-php-sdk/releases/tag/silverstripe-1.0.0
+[1.0.0]: https://packagist.org/packages/talaria/silverstripe#1.0.0
