@@ -20,6 +20,8 @@ final class Config
     public readonly int $flushIntervalMs;
     public readonly bool $defaultIntegrations;
     public readonly ?string $userId;
+    public readonly ?string $anonymousId;
+    public readonly ?string $sessionId;
     /** @var array<string, string> */
     public readonly array $tags;
     public readonly float $httpTimeoutSeconds;
@@ -68,6 +70,8 @@ final class Config
      *   flushIntervalMs?: int,
      *   defaultIntegrations?: bool,
      *   userId?: string|null,
+     *   anonymousId?: string|null,
+     *   sessionId?: string|null,
      *   tags?: array<string, string>,
      *   httpTimeoutSeconds?: float|int,
      *   minLevel?: string|SeverityLevel,
@@ -115,6 +119,12 @@ final class Config
         $this->defaultIntegrations = (bool) ($options['defaultIntegrations'] ?? true);
         $this->userId = isset($options['userId']) && is_string($options['userId']) && $options['userId'] !== ''
             ? $options['userId']
+            : null;
+        $this->anonymousId = isset($options['anonymousId']) && is_string($options['anonymousId']) && $options['anonymousId'] !== ''
+            ? $options['anonymousId']
+            : null;
+        $this->sessionId = isset($options['sessionId']) && is_string($options['sessionId']) && $options['sessionId'] !== ''
+            ? $options['sessionId']
             : null;
         $this->tags = self::normalizeTags($options['tags'] ?? []);
         $this->httpTimeoutSeconds = max(0.5, (float) ($options['httpTimeoutSeconds'] ?? 3.0));

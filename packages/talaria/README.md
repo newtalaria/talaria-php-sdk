@@ -6,7 +6,7 @@
 
 Official PHP SDK for [Talaria](https://www.newtalaria.com) — capture exceptions and application logs into triageable issues, with optional APM spans.
 
-Events queue in memory and flush on batch size, max age, or process shutdown. Fingerprinting stays on the server. A permanent ingest error (`retry: false`, such as an invalid API key) stops further event and span sends for this process; quota and 5xx do not.
+Events queue in memory and flush on batch size, max age, or process shutdown. Fingerprinting stays on the server. A permanent ingest error (`retry: false`, such as an invalid API key) stops further event, span, and analytics sends for this process; quota and 5xx do not. Missing `analyticsWrite` disables analytics only.
 
 Building a **Silverstripe** site? Install [`talaria/silverstripe`](https://packagist.org/packages/talaria/silverstripe) instead. Building **Laravel**? Install [`talaria/laravel`](https://packagist.org/packages/talaria/laravel). Both pull this package and wire the framework for you.
 
@@ -22,7 +22,7 @@ composer require talaria/talaria
 
 ## Initialize
 
-Create a client key under **Project settings → Client keys** (`tal_live_…`). Default keys include `eventsWrite` and `spansWrite`.
+Create a client key under **Project settings → Client keys** (`tal_live_…`). Default keys include `eventsWrite`, `spansWrite`, `replaysWrite`, and `analyticsWrite`.
 
 ```php
 use Talaria\Talaria;
@@ -162,6 +162,7 @@ Full hierarchy notes: [docs/logging-levels.md](docs/logging-levels.md).
 
 ```php
 Talaria::getClient()?->setUser('user_01H…');
+Talaria::getClient()?->setAnonymousId($browserAnonymousId);
 Talaria::getClient()?->addProcessor(static function (array $bag): array {
     return [
         'tags' => [
@@ -222,6 +223,23 @@ Helpers (never wrap the SDK’s own ingest Guzzle clients):
 
 When tracing is off, `startTransaction` / `startSpan` return no-ops.
 
+## Analytics
+
+PHP does not autocapture and has no cookie jar. Pass `userId` and/or `anonymousId` (browser ids forwarded on checkout APIs). `identify` / `setUser` stamp later errors and spans.
+
+```php
+$talaria = Talaria::getClient();
+
+$talaria->analytics->track('product_viewed', ['product_id' => '123', 'price' => 129.99], [
+    'anonymousId' => $browserAnonymousId, // required unless setUser / setAnonymousId / identify
+]);
+$talaria->analytics->identify('user_123', ['plan' => 'team']);
+$talaria->analytics->page(); // optional explicit; never automatic
+$talaria->analytics->reset();
+```
+
+Missing `analyticsWrite` on the key disables analytics only. A permanent ingest error (`retry: false`) still stops events, spans, and analytics for this process.
+
 ## Shutdown
 
 ```php
@@ -233,7 +251,7 @@ Call `flush` from process shutdown (and long CLI scripts) so the last batch leav
 
 ## Public API
 
-`Talaria::init`, `logger`, `withTags`, level helpers, `captureException`, `captureMessage`, `addBreadcrumb`, `startTransaction`, `startSpan`, `getTraceparent`, `resetRequestState`, `flush`, `close`.
+`Talaria::init`, `logger`, `withTags`, level helpers, `captureException`, `captureMessage`, `addBreadcrumb`, `startTransaction`, `startSpan`, `getTraceparent`, `analytics`, `resetRequestState`, `flush`, `close`.
 
 `Talaria\TalariaClient` is the DI-friendly client.
 

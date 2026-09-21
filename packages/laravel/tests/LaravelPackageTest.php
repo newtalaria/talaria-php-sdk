@@ -12,6 +12,7 @@ use Illuminate\Queue\Events\JobProcessing;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Log;
 use Talaria\Laravel\Http\Middleware\TracingMiddleware;
+use Talaria\Laravel\Facade\Talaria as LaravelTalaria;
 use Talaria\Talaria;
 use Talaria\TalariaClient;
 
@@ -23,6 +24,7 @@ final class LaravelPackageTest extends TestCase
         self::assertSame($client, Talaria::getClient());
         self::assertTrue($client->getConfig()->enableTracing);
         self::assertSame('demo', $client->getConfig()->tags['service'] ?? null);
+        self::assertSame($client->analytics, LaravelTalaria::analytics());
     }
 
     public function testExceptionHandlerReportsToTalaria(): void

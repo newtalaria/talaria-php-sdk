@@ -4,6 +4,11 @@ declare(strict_types=1);
 
 namespace Talaria;
 
+use Talaria\Analytics\Analytics;
+use Talaria\Analytics\AnalyticsQueue;
+use Talaria\Analytics\AnalyticsTransport;
+use Talaria\Analytics\AnalyticsTransportInterface;
+use Talaria\Analytics\NullAnalyticsTransport;
 use Talaria\Context\RuntimeContext;
 use Talaria\Exception\TransportException;
 use Talaria\Integration\ErrorIntegration;
@@ -30,12 +35,15 @@ final class TalariaClient
     private readonly Config $config;
     private readonly EventQueue $queue;
     private readonly SpanQueue $spanQueue;
+    private readonly AnalyticsQueue $analyticsQueue;
     private readonly Tracer $tracer;
     private readonly BreadcrumbBuffer $breadcrumbs;
-    private readonly string $sessionId;
+    private readonly Identity $identity;
+    public readonly Analytics $analytics;
     private bool $closed = false;
     private bool $eventsDisabled = false;
     private bool $spansDisabled = false;
+    private bool $analyticsDisabled = false;
     private bool $loggedIngestDisable = false;
     private ?ErrorIntegration $errorIntegration = null;
 
@@ -61,8 +69,6 @@ final class TalariaClient
     /** @var array<string, mixed> */
     private array $globalExtra = [];
 
-    private ?string $globalUserId = null;
-
     /**
      * Capture processors for per-request enrichment (tags/extra).
      *
@@ -80,11 +86,16 @@ final class TalariaClient
         ?callable $clock = null,
         ?SpanTransportInterface $spanTransport = null,
         ?SpanQueue $spanQueue = null,
+        ?AnalyticsTransportInterface $analyticsTransport = null,
+        ?AnalyticsQueue $analyticsQueue = null,
     ) {
         $this->config = $options instanceof Config ? $options : new Config($options);
-        $this->sessionId = RuntimeContext::newSessionId();
+        $this->identity = new Identity(
+            userId: $this->config->userId,
+            anonymousId: $this->config->anonymousId,
+            sessionId: $this->config->sessionId ?? '',
+        );
         $this->globalTags = $this->config->tags;
-        $this->globalUserId = $this->config->userId;
         $this->minLevel = $this->config->minLevel;
         $this->enforceDefaultLevel = $this->config->enforceDefaultLevel;
         $this->loggers = $this->config->loggers;
@@ -108,13 +119,27 @@ final class TalariaClient
         }
 
         $onError = function (TransportException $e): void {
-            $this->handleTransportError($e, spans: false);
+            $this->handleTransportError($e, 'events');
             error_log('[Talaria] ' . $e->getMessage());
         };
         $onSpanError = function (TransportException $e): void {
-            $this->handleTransportError($e, spans: true);
+            $this->handleTransportError($e, 'spans');
             error_log('[Talaria] ' . $e->getMessage());
         };
+        $onAnalyticsError = function (TransportException $e): void {
+            $this->handleTransportError($e, 'analytics');
+            error_log('[Talaria] ' . $e->getMessage());
+        };
+
+        if ($analyticsTransport === null) {
+            $analyticsTransport = $transport instanceof NullTransport
+                ? new NullAnalyticsTransport()
+                : new AnalyticsTransport(
+                    $this->config->baseUrl,
+                    $this->config->apiKey,
+                    $this->config->httpTimeoutSeconds,
+                );
+        }
 
         $this->queue = $queue ?? new EventQueue(
             $transport,
@@ -132,7 +157,22 @@ final class TalariaClient
             $onSpanError,
         );
 
-        $this->tracer = new Tracer($this->config, $this->spanQueue, $this->sessionId);
+        $this->analyticsQueue = $analyticsQueue ?? new AnalyticsQueue(
+            $analyticsTransport,
+            $this->config->maxBatchSize,
+            $this->config->flushIntervalMs,
+            $clock,
+            $onAnalyticsError,
+        );
+
+        $this->tracer = new Tracer($this->config, $this->spanQueue, $this->identity);
+        $this->analytics = new Analytics(
+            $this->config,
+            $this->identity,
+            $this->analyticsQueue,
+            $this->tracer,
+            fn (): bool => $this->closed || $this->analyticsDisabled,
+        );
 
         if ($this->config->defaultIntegrations) {
             $this->errorIntegration = new ErrorIntegration($this);
@@ -267,6 +307,7 @@ final class TalariaClient
      *   tags?: array<string, mixed>,
      *   extra?: array<string, mixed>,
      *   userId?: string|null,
+     *   anonymousId?: string|null,
      *   title?: string|null,
      *   mechanism?: array{type?: string, handled?: bool, synthetic?: bool},
      * } $context
@@ -284,6 +325,7 @@ final class TalariaClient
      *   tags?: array<string, mixed>,
      *   extra?: array<string, mixed>,
      *   userId?: string|null,
+     *   anonymousId?: string|null,
      *   title?: string|null,
      *   mechanism?: array{type?: string, handled?: bool, synthetic?: bool},
      * } $context
@@ -304,6 +346,7 @@ final class TalariaClient
      *   tags?: array<string, mixed>,
      *   extra?: array<string, mixed>,
      *   userId?: string|null,
+     *   anonymousId?: string|null,
      *   title?: string|null,
      * } $context
      */
@@ -323,6 +366,7 @@ final class TalariaClient
      *   tags?: array<string, mixed>,
      *   extra?: array<string, mixed>,
      *   userId?: string|null,
+     *   anonymousId?: string|null,
      *   title?: string|null,
      * } $context
      *
@@ -346,6 +390,7 @@ final class TalariaClient
      *   tags?: array<string, mixed>,
      *   extra?: array<string, mixed>,
      *   userId?: string|null,
+     *   anonymousId?: string|null,
      *   title?: string|null,
      *   mechanism?: array{type?: string, handled?: bool, synthetic?: bool},
      * } $context
@@ -395,6 +440,7 @@ final class TalariaClient
                 'tags' => $context['tags'] ?? null,
                 'extra' => $extra,
                 'userId' => $context['userId'] ?? null,
+                'anonymousId' => $context['anonymousId'] ?? null,
             ],
             exception: $exceptionPayload,
             platform: 'php',
@@ -407,6 +453,7 @@ final class TalariaClient
      *   tags?: array<string, mixed>,
      *   extra?: array<string, mixed>,
      *   userId?: string|null,
+     *   anonymousId?: string|null,
      *   title?: string|null,
      * } $context
      */
@@ -453,6 +500,7 @@ final class TalariaClient
                 'tags' => $context['tags'] ?? null,
                 'extra' => $extra,
                 'userId' => $context['userId'] ?? null,
+                'anonymousId' => $context['anonymousId'] ?? null,
             ],
             platform: 'php',
             originalContext: $context,
@@ -553,7 +601,25 @@ final class TalariaClient
 
     public function setUser(?string $userId): void
     {
-        $this->globalUserId = $userId !== null && $userId !== '' ? $userId : null;
+        $this->identity->setUser($userId);
+    }
+
+    public function setAnonymousId(?string $anonymousId): void
+    {
+        $this->identity->setAnonymousId($anonymousId);
+    }
+
+    /**
+     * Override the in-memory session id. Does not write cookies.
+     */
+    public function setSessionId(string $sessionId): void
+    {
+        $this->identity->setSessionId($sessionId);
+    }
+
+    public function getIdentity(): Identity
+    {
+        return $this->identity;
     }
 
     /**
@@ -568,7 +634,11 @@ final class TalariaClient
         $this->processors = [];
         $this->globalTags = $this->config->tags;
         $this->globalExtra = [];
-        $this->globalUserId = $this->config->userId;
+        $this->identity->restore(
+            $this->config->userId,
+            $this->config->anonymousId,
+            $this->config->sessionId,
+        );
         $this->tracer->reset();
     }
 
@@ -582,6 +652,7 @@ final class TalariaClient
         }
         $this->queue->flush();
         $this->spanQueue->flush();
+        $this->analyticsQueue->flush();
     }
 
     public function close(): void
@@ -601,6 +672,11 @@ final class TalariaClient
         return $this->spanQueue->count();
     }
 
+    public function analyticsQueueSize(): int
+    {
+        return $this->analyticsQueue->count();
+    }
+
     public function isEventsIngestDisabled(): bool
     {
         return $this->eventsDisabled;
@@ -611,25 +687,29 @@ final class TalariaClient
         return $this->spansDisabled;
     }
 
+    public function isAnalyticsIngestDisabled(): bool
+    {
+        return $this->analyticsDisabled;
+    }
+
     /**
-     * @param bool $spans True when the failed call was spans/ingestBatch.
+     * @param 'events'|'spans'|'analytics' $signal
      */
-    private function handleTransportError(TransportException $error, bool $spans): void
+    private function handleTransportError(TransportException $error, string $signal): void
     {
         if (!$error->isPermanent()) {
             return;
         }
         if ($error->isScopeOnly()) {
-            if ($spans) {
-                $this->spansDisabled = true;
-                $this->tracer->disableIngest();
-            } else {
-                $this->eventsDisabled = true;
-            }
+            match ($signal) {
+                'spans' => $this->disableSpans(),
+                'analytics' => $this->analyticsDisabled = true,
+                default => $this->eventsDisabled = true,
+            };
         } else {
             $this->eventsDisabled = true;
-            $this->spansDisabled = true;
-            $this->tracer->disableIngest();
+            $this->analyticsDisabled = true;
+            $this->disableSpans();
         }
         if (!$this->loggedIngestDisable) {
             $this->loggedIngestDisable = true;
@@ -637,11 +717,18 @@ final class TalariaClient
         }
     }
 
+    private function disableSpans(): void
+    {
+        $this->spansDisabled = true;
+        $this->tracer->disableIngest();
+    }
+
     /**
      * @param array{
      *   tags?: array<string, mixed>|null,
      *   extra?: array<string, mixed>|null,
      *   userId?: string|null,
+     *   anonymousId?: string|null,
      * } $context
      * @param array<string, mixed>|null $exception
      * @param array<string, mixed>|null $originalContext
@@ -694,8 +781,15 @@ final class TalariaClient
         $userId = null;
         if (is_string($context['userId'] ?? null) && $context['userId'] !== '') {
             $userId = $context['userId'];
-        } elseif ($this->globalUserId !== null) {
-            $userId = $this->globalUserId;
+        } elseif ($this->identity->userId !== null) {
+            $userId = $this->identity->userId;
+        }
+
+        $anonymousId = null;
+        if (is_string($context['anonymousId'] ?? null) && $context['anonymousId'] !== '') {
+            $anonymousId = $context['anonymousId'];
+        } elseif ($this->identity->anonymousId !== null) {
+            $anonymousId = $this->identity->anonymousId;
         }
 
         if ($this->beforeSend !== null) {
@@ -707,6 +801,7 @@ final class TalariaClient
                 'tags' => $tags,
                 'extra' => $extra,
                 'userId' => $userId,
+                'anonymousId' => $anonymousId,
                 'exception' => $exception,
             ];
             $hint = [
@@ -746,6 +841,9 @@ final class TalariaClient
             $userId = array_key_exists('userId', $result)
                 ? (is_string($result['userId']) && $result['userId'] !== '' ? $result['userId'] : null)
                 : $userId;
+            $anonymousId = array_key_exists('anonymousId', $result)
+                ? (is_string($result['anonymousId']) && $result['anonymousId'] !== '' ? $result['anonymousId'] : null)
+                : $anonymousId;
             $exception = array_key_exists('exception', $result)
                 ? (is_array($result['exception']) ? $result['exception'] : null)
                 : $exception;
@@ -787,7 +885,7 @@ final class TalariaClient
             release: $this->config->release,
             commitSha: $this->config->commitSha,
             userId: $userId,
-            sessionId: $this->sessionId,
+            sessionId: $this->identity->sessionId,
             requestId: $runtime['requestId'],
             url: $runtime['url'],
             tags: $tags !== [] ? $tags : null,
@@ -801,6 +899,7 @@ final class TalariaClient
             userAgent: isset($_SERVER['HTTP_USER_AGENT']) && is_string($_SERVER['HTTP_USER_AGENT'])
                 ? $_SERVER['HTTP_USER_AGENT']
                 : null,
+            anonymousId: $anonymousId,
         );
 
         $this->queue->enqueue($event);

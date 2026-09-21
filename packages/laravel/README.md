@@ -71,6 +71,17 @@ use Talaria\Talaria;
 Talaria::logger(['tags' => ['feature' => 'checkout']])->warn('Payment method missing');
 ```
 
+Analytics uses the same client. PHP does not autocapture — pass `userId` and/or `anonymousId`:
+
+```php
+use Talaria\Laravel\Facade\Talaria;
+
+Talaria::analytics()->track('product_viewed', ['product_id' => '123'], [
+    'anonymousId' => $browserAnonymousId,
+]);
+Talaria::analytics()->identify((string) $user->getAuthIdentifier(), ['plan' => 'team']);
+```
+
 ## What is wired
 
 | Surface | Behavior |

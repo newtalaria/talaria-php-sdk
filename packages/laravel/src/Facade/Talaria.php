@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Talaria\Laravel\Facade;
 
 use Illuminate\Support\Facades\Facade;
+use Talaria\Analytics\Analytics;
 use Talaria\TalariaClient;
 
 /**
@@ -18,6 +19,9 @@ use Talaria\TalariaClient;
  * @method static void flush()
  * @method static void close()
  * @method static void setUser(string|null $userId)
+ * @method static void setAnonymousId(string|null $anonymousId)
+ * @method static void setSessionId(string $sessionId)
+ * @method static \Talaria\Analytics\Analytics analytics()
  *
  * @see TalariaClient
  */
@@ -26,5 +30,13 @@ final class Talaria extends Facade
     protected static function getFacadeAccessor(): string
     {
         return TalariaClient::class;
+    }
+
+    public static function analytics(): Analytics
+    {
+        /** @var TalariaClient $client */
+        $client = static::getFacadeRoot();
+
+        return $client->analytics;
     }
 }

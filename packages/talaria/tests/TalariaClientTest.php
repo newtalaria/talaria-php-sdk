@@ -223,6 +223,7 @@ final class TalariaClientTest extends TestCase
         self::assertSame(1, $transport->attempts);
         self::assertTrue($client->isEventsIngestDisabled());
         self::assertTrue($client->isSpansIngestDisabled());
+        self::assertTrue($client->isAnalyticsIngestDisabled());
     }
 
     public function testQuotaDoesNotDisableIngest(): void

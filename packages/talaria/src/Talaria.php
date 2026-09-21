@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Talaria;
 
+use Talaria\Analytics\Analytics;
 use Talaria\Tracing\Span;
 use Talaria\Tracing\SpanKind;
 
@@ -204,6 +205,11 @@ final class Talaria
     public static function getTraceparent(): ?string
     {
         return self::requireClient()->getTraceparent();
+    }
+
+    public static function analytics(): Analytics
+    {
+        return self::requireClient()->analytics;
     }
 
     public static function resetRequestState(): void

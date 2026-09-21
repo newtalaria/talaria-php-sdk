@@ -6,6 +6,7 @@ namespace Talaria\Tracing;
 
 use Talaria\Config;
 use Talaria\Context\RuntimeContext;
+use Talaria\Identity;
 
 /**
  * Process-local tracer: one transaction (root span) plus child spans.
@@ -42,7 +43,7 @@ final class Tracer
     public function __construct(
         private readonly Config $config,
         private readonly SpanQueue $queue,
-        private readonly string $sessionId = '',
+        private readonly Identity $identity = new Identity(),
     ) {
     }
 
@@ -180,9 +181,10 @@ final class Tracer
             onEnd: $this->onSpanEnded(...),
             environment: $this->config->environment,
             release: $this->config->release,
-            userId: $this->config->userId,
-            sessionId: $this->sessionId !== '' ? $this->sessionId : null,
+            userId: $this->identity->userId,
+            sessionId: $this->identity->sessionId !== '' ? $this->identity->sessionId : null,
             requestId: $incoming?->traceId,
+            anonymousId: $this->identity->anonymousId,
         );
 
         $this->stack[] = $span;

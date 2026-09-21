@@ -47,6 +47,7 @@ final class Span
         public readonly ?string $userId = null,
         public readonly ?string $sessionId = null,
         public readonly ?string $requestId = null,
+        public readonly ?string $anonymousId = null,
     ) {
         $this->attributes = $attributes;
         $this->resource = $resource;
@@ -180,6 +181,9 @@ final class Span
         }
         if ($this->userId !== null && $this->userId !== '') {
             $wire['userId'] = $this->userId;
+        }
+        if ($this->anonymousId !== null && $this->anonymousId !== '') {
+            $wire['anonymousId'] = $this->anonymousId;
         }
         if ($this->sessionId !== null && $this->sessionId !== '') {
             $wire['sessionId'] = $this->sessionId;

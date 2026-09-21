@@ -33,6 +33,7 @@ final class EventTest extends TestCase
             ],
             platform: 'php',
             userAgent: 'Instagram 192.168.1.2.1 (iPhone)',
+            anonymousId: 'anon-1',
         );
 
         $wire = $event->toWire();
@@ -46,6 +47,7 @@ final class EventTest extends TestCase
         self::assertSame('#0 /app/Checkout.php', $wire['stackTrace']);
         self::assertSame('1.2.3', $wire['release']);
         self::assertSame('user-1', $wire['userId']);
+        self::assertSame('anon-1', $wire['anonymousId']);
         self::assertSame('sess-1', $wire['sessionId']);
         self::assertSame('req-1', $wire['requestId']);
         self::assertSame('https://example.com/checkout', $wire['url']);

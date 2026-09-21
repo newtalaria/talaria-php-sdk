@@ -36,6 +36,7 @@ final class Event
         /** @var list<array<string, mixed>>|null */
         public readonly ?array $breadcrumbs = null,
         public readonly ?string $userAgent = null,
+        public readonly ?string $anonymousId = null,
     ) {
         if (trim($message) === '') {
             throw new \InvalidArgumentException('Event message must not be empty.');
@@ -75,6 +76,9 @@ final class Event
         }
         if ($this->userId !== null && $this->userId !== '') {
             $wire['userId'] = $this->userId;
+        }
+        if ($this->anonymousId !== null && $this->anonymousId !== '') {
+            $wire['anonymousId'] = $this->anonymousId;
         }
         if ($this->sessionId !== null && $this->sessionId !== '') {
             $wire['sessionId'] = $this->sessionId;

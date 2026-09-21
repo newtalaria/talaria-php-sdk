@@ -70,13 +70,18 @@ final class RuntimeContext
         ];
     }
 
-    public static function newSessionId(): string
+    public static function newId(): string
     {
         try {
             return bin2hex(random_bytes(16));
         } catch (\Throwable) {
             return uniqid('tal_', true);
         }
+    }
+
+    public static function newSessionId(): string
+    {
+        return self::newId();
     }
 
     public static function isoTimestamp(): string
