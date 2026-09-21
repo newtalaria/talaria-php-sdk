@@ -1,0 +1,15 @@
+{
+  "name": "talaria/logging",
+  "description": "Metapackage alias for talaria/silverstripe",
+  "type": "metapackage",
+  "license": "MIT",
+  "homepage": "https://www.newtalaria.com/docs/sdk/silverstripe",
+  "support": {
+    "issues": "https://github.com/newtalaria/talaria-php-sdk/issues",
+    "source": "https://github.com/newtalaria/talaria-php-sdk"
+  },
+  "require": {
+    "php": "^8.1",
+    "talaria/silverstripe": "^1.0"
+  }
+}

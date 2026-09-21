@@ -30,6 +30,16 @@ final class Talaria
         return self::$client;
     }
 
+    /**
+     * Bind an already-constructed client (framework adapters).
+     *
+     * @internal
+     */
+    public static function setClient(TalariaClient $client): void
+    {
+        self::$client = $client;
+    }
+
     public static function getClient(): ?TalariaClient
     {
         return self::$client;
@@ -194,6 +204,11 @@ final class Talaria
     public static function getTraceparent(): ?string
     {
         return self::requireClient()->getTraceparent();
+    }
+
+    public static function resetRequestState(): void
+    {
+        self::$client?->resetRequestState();
     }
 
     public static function flush(): void

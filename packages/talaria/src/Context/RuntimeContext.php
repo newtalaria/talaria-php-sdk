@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Talaria\Context;
 
 use Talaria\Tracing\TraceContext;
+use Talaria\Tracing\UrlSanitizer;
 
 /**
  * Best-effort runtime / request context for auto-enrichment.
@@ -24,7 +25,7 @@ final class RuntimeContext
         $url = null;
         if (isset($_SERVER['HTTP_HOST'], $_SERVER['REQUEST_URI'])) {
             $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
-            $url = $scheme . '://' . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'];
+            $url = UrlSanitizer::sanitize($scheme . '://' . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI']);
         }
 
         $requestId = null;

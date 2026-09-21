@@ -1,0 +1,69 @@
+{
+  "name": "talaria/laravel",
+  "description": "Laravel adapter for Talaria — exceptions, request/DB/queue/HTTP/Artisan tracing, Octane, Horizon, and Livewire",
+  "type": "library",
+  "license": "MIT",
+  "keywords": [
+    "talaria",
+    "laravel",
+    "apm",
+    "error-tracking",
+    "octane",
+    "horizon",
+    "livewire"
+  ],
+  "authors": [
+    {
+      "name": "Talaria",
+      "homepage": "https://www.newtalaria.com"
+    }
+  ],
+  "homepage": "https://www.newtalaria.com/docs/sdk/laravel",
+  "support": {
+    "docs": "https://www.newtalaria.com/docs/sdk/laravel",
+    "issues": "https://github.com/newtalaria/talaria-php-sdk/issues",
+    "source": "https://github.com/newtalaria/talaria-php-sdk"
+  },
+  "require": {
+    "php": "^8.1",
+    "illuminate/support": "^10.0 || ^11.0 || ^12.0",
+    "talaria/talaria": "^1.0"
+  },
+  "require-dev": {
+    "orchestra/testbench": "^8.0 || ^9.0 || ^10.0",
+    "phpunit/phpunit": "^10.5 || ^11.0"
+  },
+  "suggest": {
+    "laravel/octane": "Flush and reset Talaria between requests on long-lived workers",
+    "laravel/horizon": "Queue worker spans with Horizon-specific attributes",
+    "livewire/livewire": "Component-name child spans under the HTTP transaction"
+  },
+  "autoload": {
+    "psr-4": {
+      "Talaria\\Laravel\\": "src/"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "Talaria\\Laravel\\Tests\\": "tests/"
+    }
+  },
+  "extra": {
+    "laravel": {
+      "providers": [
+        "Talaria\\Laravel\\TalariaServiceProvider"
+      ],
+      "aliases": {
+        "Talaria": "Talaria\\Laravel\\Facade\\Talaria"
+      }
+    }
+  },
+  "scripts": {
+    "test": "phpunit"
+  },
+  "config": {
+    "sort-packages": true
+  },
+  "minimum-stability": "dev",
+  "prefer-stable": true
+}

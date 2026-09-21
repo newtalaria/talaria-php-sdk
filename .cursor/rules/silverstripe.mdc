@@ -1,10 +1,7 @@
 ---
 description: Talaria Silverstripe module conventions
 globs:
-  - "silverstripe/**"
-  - "_config/**"
-  - "_config.php"
-  - "client/**"
+  - "packages/silverstripe/**"
 ---
 
 # Silverstripe adapter

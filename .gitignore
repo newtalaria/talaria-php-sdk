@@ -2,7 +2,11 @@
 /composer.lock
 /.phpunit.cache/
 /phpunit.xml
+/.php-cs-fixer.cache
 /.idea/
 /.vscode/
 *.swp
 .DS_Store
+packages/*/vendor/
+packages/*/composer.lock
+packages/*/.phpunit.cache/

@@ -1,8 +1,8 @@
 ---
 description: PHP SDK HTTP transport and batch queue rules
 globs:
-  - "src/Transport/**"
-  - "tests/**"
+  - "packages/talaria/src/Transport/**"
+  - "packages/talaria/tests/**"
 ---
 
 # Transport & queue

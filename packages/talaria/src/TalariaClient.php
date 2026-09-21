@@ -556,6 +556,22 @@ final class TalariaClient
         $this->globalUserId = $userId !== null && $userId !== '' ? $userId : null;
     }
 
+    /**
+     * Clear per-request state on long-lived workers (Octane, Horizon, queue).
+     *
+     * Does not re-enable a process-level ingest kill switch, and does not
+     * change init options (dsn, sample rates, default tags).
+     */
+    public function resetRequestState(): void
+    {
+        $this->breadcrumbs->clear();
+        $this->processors = [];
+        $this->globalTags = $this->config->tags;
+        $this->globalExtra = [];
+        $this->globalUserId = $this->config->userId;
+        $this->tracer->reset();
+    }
+
     public function flush(): void
     {
         // Only finish the FCGI request when the HTTP response is already underway

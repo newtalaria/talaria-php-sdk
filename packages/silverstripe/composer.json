@@ -1,0 +1,67 @@
+{
+  "name": "talaria/silverstripe",
+  "description": "Silverstripe adapter for Talaria — Monolog, Injector, browser SDK inject, and optional request/DB/queue tracing",
+  "type": "silverstripe-vendormodule",
+  "license": "MIT",
+  "keywords": [
+    "talaria",
+    "silverstripe",
+    "apm",
+    "error-tracking",
+    "monolog"
+  ],
+  "authors": [
+    {
+      "name": "Talaria",
+      "homepage": "https://www.newtalaria.com"
+    }
+  ],
+  "homepage": "https://www.newtalaria.com/docs/sdk/silverstripe",
+  "support": {
+    "docs": "https://www.newtalaria.com/docs/sdk/silverstripe",
+    "issues": "https://github.com/newtalaria/talaria-php-sdk/issues",
+    "source": "https://github.com/newtalaria/talaria-php-sdk"
+  },
+  "require": {
+    "php": "^8.1",
+    "monolog/monolog": "^1.25 || ^3.0",
+    "silverstripe/framework": "^4.13 || ^5 || ^6",
+    "silverstripe/vendor-plugin": "^1.0 || ^2.0",
+    "talaria/talaria": "^1.0"
+  },
+  "require-dev": {
+    "phpunit/phpunit": "^11.0"
+  },
+  "suggest": {
+    "symbiote/silverstripe-queuedjobs": "Producer/consumer spans via TracingQueuedJobService"
+  },
+  "autoload": {
+    "psr-4": {
+      "Talaria\\SilverStripe\\": "src/"
+    },
+    "exclude-from-classmap": [
+      "handlers/",
+      "src/TracingQueuedJobService.php"
+    ]
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "Talaria\\Tests\\": "tests/"
+    }
+  },
+  "extra": {
+    "installer-name": "talaria-logging"
+  },
+  "scripts": {
+    "test": "phpunit"
+  },
+  "config": {
+    "sort-packages": true,
+    "allow-plugins": {
+      "composer/installers": true,
+      "silverstripe/vendor-plugin": true
+    }
+  },
+  "minimum-stability": "dev",
+  "prefer-stable": true
+}

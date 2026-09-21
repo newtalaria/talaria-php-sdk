@@ -1,7 +1,7 @@
 ---
 description: PHP SDK public API and capture semantics
 globs:
-  - "src/**"
+  - "packages/talaria/src/**"
 ---
 
 # Public API
@@ -20,6 +20,7 @@ Talaria::addBreadcrumb([...]);
 Talaria::startTransaction($name, $kind?, $attributes?);
 Talaria::startSpan($name, $kind?, $attributes?);
 Talaria::getTraceparent();
+Talaria::resetRequestState();
 Talaria::getMinLevel(); Talaria::setMinLevel($level); Talaria::isLevelEnabled($level);
 Talaria::isEnforceDefaultLevel(); Talaria::setEnforceDefaultLevel($bool);
 Talaria::flush();

@@ -1,0 +1,66 @@
+{
+  "name": "talaria/talaria",
+  "description": "Official PHP SDK for Talaria — exceptions, PSR-3 logging, batched ingest, and optional tracing",
+  "type": "library",
+  "license": "MIT",
+  "keywords": [
+    "talaria",
+    "apm",
+    "error-tracking",
+    "logging",
+    "tracing",
+    "psr-3"
+  ],
+  "authors": [
+    {
+      "name": "Talaria",
+      "homepage": "https://www.newtalaria.com"
+    }
+  ],
+  "homepage": "https://www.newtalaria.com/docs/sdk/php",
+  "support": {
+    "docs": "https://www.newtalaria.com/docs/sdk/php",
+    "issues": "https://github.com/newtalaria/talaria-php-sdk/issues",
+    "source": "https://github.com/newtalaria/talaria-php-sdk"
+  },
+  "require": {
+    "php": "^8.1",
+    "guzzlehttp/guzzle": "^7.0",
+    "psr/log": "^1.0 || ^2.0 || ^3.0"
+  },
+  "require-dev": {
+    "phpstan/phpstan": "^2.1",
+    "phpunit/phpunit": "^11.0"
+  },
+  "suggest": {
+    "ext-pdo": "Wrap connections with Talaria\\Tracing\\TracingPdo",
+    "ext-mysqli": "Use Talaria\\Tracing\\TracingMysqli::query() / execute()",
+    "ext-redis": "Wrap a \\Redis instance with RedisInstrumentation::wrap()",
+    "predis/predis": "Wrap with Talaria\\Tracing\\RedisInstrumentation::wrap() for Redis CLIENT spans",
+    "talaria/silverstripe": "Silverstripe 4.13+ / 5 / 6 adapter",
+    "talaria/laravel": "Laravel 10 / 11 / 12 adapter"
+  },
+  "autoload": {
+    "psr-4": {
+      "Talaria\\": "src/"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "Talaria\\Tests\\": "tests/"
+    }
+  },
+  "scripts": {
+    "test": "phpunit",
+    "phpstan": "phpstan analyse --memory-limit=512M"
+  },
+  "config": {
+    "sort-packages": true
+  },
+  "minimum-stability": "stable",
+  "extra": {
+    "branch-alias": {
+      "dev-main": "1.0-dev"
+    }
+  }
+}

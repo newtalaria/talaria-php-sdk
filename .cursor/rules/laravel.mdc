@@ -1,0 +1,23 @@
+---
+description: Talaria Laravel adapter conventions
+globs: packages/laravel/**
+---
+
+# Laravel adapter
+
+Depends on core `Talaria\TalariaClient`. Integrate via the auto-discovered service provider — minimal app code.
+
+## Rules
+
+- Support Laravel **10 / 11 / 12** (`illuminate/support ^10 \|\| ^11 \|\| ^12`)
+- Auto-discover `Talaria\\Laravel\\TalariaServiceProvider`
+- Publish `config/talaria.php`; env names match Silverstripe (`TALARIA_DSN`, `TALARIA_API_KEY`, `TALARIA_ENABLE_TRACING`, …)
+- Do not replace the app exception handler — hook `reportable`
+- HTTP SERVER spans use route name or URI template for `http.route`
+- Query spans via `QueryExecuted`; do not collapse identical SQL (N+1 stays visible)
+- Queue: CONSUMER transaction per job; `flush()` + `resetRequestState()` after each job
+- Never wrap Talaria ingest HTTP with tracing
+- Octane / Horizon / Livewire are `suggest` + `class_exists` / `function_exists` — not hard requires
+- Octane: `resetRequestState()` on receive; `flush()` on terminate
+- Livewire: child spans only when a SERVER transaction is already open
+- Tracing default off

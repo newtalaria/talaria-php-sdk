@@ -272,4 +272,73 @@ final class TalariaClientTest extends TestCase
         self::assertSame(2, $transport->attempts);
         self::assertFalse($client->isEventsIngestDisabled());
     }
+
+    public function testMissingScopeDisablesOnlyThatSignal(): void
+    {
+        $transport = new FakeTransport();
+        $transport->failWith = new \Talaria\Exception\TransportException(
+            'Talaria events/ingestBatch failed: HTTP 400',
+            400,
+            className: 'ApiUnauthorizedException',
+            retry: false,
+            bodyMessage: 'API key lacks required scope: eventsWrite',
+        );
+        $spans = new FakeSpanTransport();
+        $client = new TalariaClient([
+            'dsn' => 'https://api.example.com',
+            'apiKey' => 'tal_live_testkeytestkeytestkeytestkey123456',
+            'environment' => 'development',
+            'defaultIntegrations' => false,
+            'enableTracing' => true,
+            'maxBatchSize' => 1,
+        ], $transport, spanTransport: $spans);
+
+        $client->captureMessage('first');
+        $client->captureMessage('second');
+
+        self::assertSame(1, $transport->attempts);
+        self::assertTrue($client->isEventsIngestDisabled());
+        self::assertFalse($client->isSpansIngestDisabled());
+    }
+
+    public function testResetRequestStateClearsBreadcrumbsProcessorsAndSpans(): void
+    {
+        $transport = new FakeTransport();
+        $client = new TalariaClient([
+            'dsn' => 'https://api.example.com',
+            'apiKey' => 'tal_live_testkeytestkeytestkeytestkey123456',
+            'environment' => 'development',
+            'defaultIntegrations' => false,
+            'enableTracing' => true,
+            'tags' => ['service' => 'api'],
+            'userId' => 'init-user',
+            'maxBatchSize' => 50,
+            'flushIntervalMs' => 60_000,
+        ], $transport);
+
+        $client->setUser('request-user');
+        $client->setExtra(['cart_id' => 'abc']);
+        $client->addProcessor(static fn (array $bag): array => [
+            'tags' => ['ajax' => 'true'],
+        ]);
+        $client->addBreadcrumb(['message' => 'clicked pay', 'category' => 'ui']);
+        $tx = $client->startTransaction('GET /checkout');
+        self::assertNotNull($client->getTraceparent());
+        $tx->end();
+
+        $client->resetRequestState();
+
+        self::assertNull($client->getTraceparent());
+        $client->captureMessage('after reset', SeverityLevel::Error);
+        $client->flush();
+
+        $event = $transport->allEvents()[0];
+        self::assertSame('init-user', $event->userId);
+        self::assertSame('api', $event->tags['service'] ?? null);
+        self::assertArrayNotHasKey('ajax', $event->tags ?? []);
+        self::assertNull($event->breadcrumbs);
+        $extra = json_decode((string) $event->extraJson, true);
+        self::assertIsArray($extra);
+        self::assertArrayNotHasKey('cart_id', $extra);
+    }
 }

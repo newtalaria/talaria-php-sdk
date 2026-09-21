@@ -1,6 +1,6 @@
 # Silverstripe guide
 
-Set up Talaria on **Silverstripe 4.13+ / 5 / 6** (PHP **8.1+**) with `newtalaria/logging`. One Composer package installs the core PHP SDK and the Silverstripe module (Monolog handler, Injector wiring, optional browser inject).
+Set up Talaria on **Silverstripe 4.13+ / 5 / 6** (PHP **8.1+**) with `talaria/silverstripe`. That package installs the core PHP SDK (`talaria/talaria`) and the Silverstripe module (Monolog handler, Injector wiring, optional browser inject).
 
 You can instrument your app in two ways. They share the same credentials and can run together.
 
@@ -20,7 +20,7 @@ You can instrument your app in two ways. They share the same credentials and can
 ### 1. Install
 
 ```bash
-composer require newtalaria/logging
+composer require talaria/silverstripe
 ```
 
 ### 2. Environment variables

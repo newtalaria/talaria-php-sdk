@@ -67,4 +67,35 @@ final class RuntimeContextTest extends TestCase
             }
         }
     }
+
+    public function testCollectSanitizesUrlQueryValues(): void
+    {
+        $previousHost = $_SERVER['HTTP_HOST'] ?? null;
+        $previousUri = $_SERVER['REQUEST_URI'] ?? null;
+        $previousHttps = $_SERVER['HTTPS'] ?? null;
+        $_SERVER['HTTP_HOST'] = 'shop.example.com';
+        $_SERVER['REQUEST_URI'] = '/checkout?token=secret&page=2';
+        $_SERVER['HTTPS'] = 'on';
+
+        try {
+            $runtime = RuntimeContext::collect();
+            self::assertSame('https://shop.example.com/checkout?token=&page=', $runtime['url']);
+        } finally {
+            if ($previousHost === null) {
+                unset($_SERVER['HTTP_HOST']);
+            } else {
+                $_SERVER['HTTP_HOST'] = $previousHost;
+            }
+            if ($previousUri === null) {
+                unset($_SERVER['REQUEST_URI']);
+            } else {
+                $_SERVER['REQUEST_URI'] = $previousUri;
+            }
+            if ($previousHttps === null) {
+                unset($_SERVER['HTTPS']);
+            } else {
+                $_SERVER['HTTPS'] = $previousHttps;
+            }
+        }
+    }
 }

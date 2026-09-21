@@ -12,8 +12,13 @@ final class FakeSpanTransport implements SpanTransportInterface
     /** @var list<list<Span>> */
     public array $batches = [];
 
+    public ?\Talaria\Exception\TransportException $failWith = null;
+
     public function sendBatch(array $spans): void
     {
+        if ($this->failWith !== null) {
+            throw $this->failWith;
+        }
         $this->batches[] = array_values($spans);
     }
 

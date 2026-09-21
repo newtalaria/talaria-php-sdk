@@ -1,0 +1,103 @@
+parameters:
+	ignoreErrors:
+		-
+			message: '#^Method Talaria\\TalariaClient\:\:debug\(\) has parameter \$context with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/TalariaClient.php
+
+		-
+			message: '#^Method Talaria\\TalariaClient\:\:error\(\) has parameter \$context with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/TalariaClient.php
+
+		-
+			message: '#^Method Talaria\\TalariaClient\:\:fatal\(\) has parameter \$context with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/TalariaClient.php
+
+		-
+			message: '#^Method Talaria\\TalariaClient\:\:info\(\) has parameter \$context with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/TalariaClient.php
+
+		-
+			message: '#^Method Talaria\\TalariaClient\:\:log\(\) has parameter \$context with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/TalariaClient.php
+
+		-
+			message: '#^Method Talaria\\TalariaClient\:\:warn\(\) has parameter \$context with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/TalariaClient.php
+
+		-
+			message: '#^Method Talaria\\TalariaClient\:\:warning\(\) has parameter \$context with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/TalariaClient.php
+
+		-
+			message: '#^Parameter \#1 \$options of class Talaria\\Config constructor expects array\{dsn\?\: string, baseUrl\?\: string, apiKey\: string, environment\: string\|Talaria\\Environment, release\?\: string\|null, commitSha\?\: string\|null, sampleRate\?\: float\|int, maxBatchSize\?\: int, \.\.\.\}, array\<string, mixed\> given\.$#'
+			identifier: argument.type
+			count: 1
+			path: src/TalariaClient.php
+
+		-
+			message: '#^Call to an undefined method object\:\:handle\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: src/Tracing/Psr15Middleware.php
+
+		-
+			message: '#^Method Talaria\\Tracing\\RedisClientProxy\:\:__call\(\) has parameter \$arguments with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Tracing/RedisClientProxy.php
+
+		-
+			message: '#^Trying to invoke \(callable\(\)\: float\)\|null but it might not be a callable\.$#'
+			identifier: callable.nonCallable
+			count: 2
+			path: src/Tracing/SpanQueue.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>traceId" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 2
+			path: src/Tracing/Tracer.php
+
+		-
+			message: '#^Using nullsafe property access on non\-nullable type Talaria\\Tracing\\Span\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: src/Tracing/Tracer.php
+
+		-
+			message: '#^Method Talaria\\Tracing\\TracingPdo\:\:__call\(\) has parameter \$arguments with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Tracing/TracingPdo.php
+
+		-
+			message: '#^Method Talaria\\Tracing\\TracingPdoStatement\:\:__call\(\) has parameter \$arguments with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Tracing/TracingPdoStatement.php
+
+		-
+			message: '#^Method Talaria\\Tracing\\TracingPdoStatement\:\:execute\(\) has parameter \$params with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Tracing/TracingPdoStatement.php
+
+		-
+			message: '#^Trying to invoke \(callable\(\)\: float\)\|null but it might not be a callable\.$#'
+			identifier: callable.nonCallable
+			count: 2
+			path: src/Transport/EventQueue.php
