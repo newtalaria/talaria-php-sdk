@@ -31,6 +31,11 @@ final class Analytics
         $this->isDisabled = $isDisabled;
     }
 
+    public function isEnabled(): bool
+    {
+        return $this->config->enableAnalytics && !($this->isDisabled)();
+    }
+
     /**
      * @param array<string, mixed> $properties
      * @param array<string, mixed> $options
@@ -190,6 +195,21 @@ final class Analytics
             utmTerm: $utm['utmTerm'],
             utmContent: $utm['utmContent'],
             propertiesJson: $propertiesJson,
+            browserName: $this->stringOption($options, 'browserName'),
+            browserVersion: $this->stringOption($options, 'browserVersion'),
+            browserEngine: $this->stringOption($options, 'browserEngine'),
+            osName: $this->stringOption($options, 'osName'),
+            osVersion: $this->stringOption($options, 'osVersion'),
+            device: $this->stringOption($options, 'device'),
+            locale: $this->stringOption($options, 'locale') ?? $this->acceptLanguage(),
+            timezone: $this->stringOption($options, 'timezone'),
+            webview: ($options['webview'] ?? null) === true ? true : null,
+            webviewHost: $this->stringOption($options, 'webviewHost'),
+            bot: ($options['bot'] ?? null) === true ? true : null,
+            botName: $this->stringOption($options, 'botName'),
+            botKind: $this->stringOption($options, 'botKind'),
+            webdriver: ($options['webdriver'] ?? null) === true ? true : null,
+            userAgent: $this->stringOption($options, 'userAgent') ?? $this->endUserAgent(),
         ));
     }
 
@@ -267,5 +287,26 @@ final class Analytics
         $trimmed = trim($bag[$key]);
 
         return $trimmed === '' ? null : $trimmed;
+    }
+
+    private function endUserAgent(): ?string
+    {
+        if (!isset($_SERVER['HTTP_USER_AGENT']) || !is_string($_SERVER['HTTP_USER_AGENT'])) {
+            return null;
+        }
+        $trimmed = trim($_SERVER['HTTP_USER_AGENT']);
+
+        return $trimmed === '' ? null : $trimmed;
+    }
+
+    private function acceptLanguage(): ?string
+    {
+        if (!isset($_SERVER['HTTP_ACCEPT_LANGUAGE']) || !is_string($_SERVER['HTTP_ACCEPT_LANGUAGE'])) {
+            return null;
+        }
+        $first = explode(',', $_SERVER['HTTP_ACCEPT_LANGUAGE'])[0] ?? '';
+        $locale = trim(explode(';', $first)[0] ?? '');
+
+        return $locale === '' ? null : $locale;
     }
 }

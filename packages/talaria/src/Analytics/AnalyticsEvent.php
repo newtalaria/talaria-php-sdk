@@ -34,6 +34,21 @@ final class AnalyticsEvent
         public readonly ?string $utmTerm = null,
         public readonly ?string $utmContent = null,
         public readonly ?string $propertiesJson = null,
+        public readonly ?string $browserName = null,
+        public readonly ?string $browserVersion = null,
+        public readonly ?string $browserEngine = null,
+        public readonly ?string $osName = null,
+        public readonly ?string $osVersion = null,
+        public readonly ?string $device = null,
+        public readonly ?string $locale = null,
+        public readonly ?string $timezone = null,
+        public readonly ?bool $webview = null,
+        public readonly ?string $webviewHost = null,
+        public readonly ?bool $bot = null,
+        public readonly ?string $botName = null,
+        public readonly ?string $botKind = null,
+        public readonly ?bool $webdriver = null,
+        public readonly ?string $userAgent = null,
     ) {
     }
 
@@ -108,7 +123,38 @@ final class AnalyticsEvent
         if ($this->propertiesJson !== null && $this->propertiesJson !== '') {
             $wire['propertiesJson'] = $this->propertiesJson;
         }
+        $this->put($wire, 'browserName', $this->browserName);
+        $this->put($wire, 'browserVersion', $this->browserVersion);
+        $this->put($wire, 'browserEngine', $this->browserEngine);
+        $this->put($wire, 'osName', $this->osName);
+        $this->put($wire, 'osVersion', $this->osVersion);
+        $this->put($wire, 'device', $this->device);
+        $this->put($wire, 'locale', $this->locale);
+        $this->put($wire, 'timezone', $this->timezone);
+        if ($this->webview === true) {
+            $wire['webview'] = true;
+        }
+        $this->put($wire, 'webviewHost', $this->webviewHost);
+        if ($this->bot === true) {
+            $wire['bot'] = true;
+        }
+        $this->put($wire, 'botName', $this->botName);
+        $this->put($wire, 'botKind', $this->botKind);
+        if ($this->webdriver === true) {
+            $wire['webdriver'] = true;
+        }
+        $this->put($wire, 'userAgent', $this->userAgent);
 
         return $wire;
+    }
+
+    /**
+     * @param array<string, mixed> $wire
+     */
+    private function put(array &$wire, string $key, ?string $value): void
+    {
+        if ($value !== null && $value !== '') {
+            $wire[$key] = $value;
+        }
     }
 }

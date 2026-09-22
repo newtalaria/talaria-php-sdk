@@ -40,6 +40,7 @@ App → TalariaClient
 | environment | `production` \| `staging` \| `development` |
 | sampleRate | Client-side event sampling before enqueue |
 | enableTracing / tracesSampleRate | APM off until enabled; head-based span sampling (100% errors, default 10% success) |
+| enableAnalytics | Product analytics. Core default on; Silverstripe YAML / `TALARIA_ENABLE_ANALYTICS` default off |
 
 ## Sources of truth
 

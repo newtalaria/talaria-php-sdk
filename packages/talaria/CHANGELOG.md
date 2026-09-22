@@ -5,6 +5,12 @@ All notable changes to `talaria/talaria` are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.1] - 2026-09-22
+
+### Added
+
+- Init option `enableAnalytics` (default **true** on the core SDK). When false, `track` / `identify` / `page` / `screen` are no-ops. Framework adapters such as Silverstripe pass `false` until their YAML/env flag is on.
+
 ## [1.1.0] - 2026-09-21
 
 ### Added
@@ -22,5 +28,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `TalariaClient::resetRequestState()` for long-lived workers (Octane, Horizon, queues).
 - Event URL sanitization (query values stripped).
 
+[1.1.1]: https://packagist.org/packages/talaria/talaria#1.1.1
 [1.1.0]: https://packagist.org/packages/talaria/talaria#1.1.0
 [1.0.0]: https://packagist.org/packages/talaria/talaria#1.0.0

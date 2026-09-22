@@ -36,4 +36,27 @@ final class ConfigTest extends TestCase
         self::assertSame('web', $out['platform']);
         self::assertSame('silverstripe-frontend', $out['runtime']);
     }
+
+    public function testEnableAnalyticsDefaultsTrue(): void
+    {
+        $cfg = new Config([
+            'dsn' => 'https://api.example.com',
+            'apiKey' => 'tal_live_testkeytestkeytestkeytestkey123456',
+            'environment' => 'development',
+        ]);
+
+        self::assertTrue($cfg->enableAnalytics);
+    }
+
+    public function testEnableAnalyticsCanDisable(): void
+    {
+        $cfg = new Config([
+            'dsn' => 'https://api.example.com',
+            'apiKey' => 'tal_live_testkeytestkeytestkeytestkey123456',
+            'environment' => 'development',
+            'enableAnalytics' => false,
+        ]);
+
+        self::assertFalse($cfg->enableAnalytics);
+    }
 }

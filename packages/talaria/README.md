@@ -37,6 +37,7 @@ Talaria::init([
     'sampleRate' => 1.0,
     'enableTracing' => false,
     'tracesSampleRate' => 0.1,
+    'enableAnalytics' => true,
     'tags' => [
         'service' => 'api',
         'platform' => 'php',
@@ -51,6 +52,7 @@ Never hardcode keys. Prefer environment variables or your secret store.
 | Log volume | `minLevel: 'warning'` |
 | Identity | Set `userId` when you know the signed-in user |
 | Tracing | Leave `enableTracing` off until you want APM |
+| Analytics | Core default on (explicit `track` / `identify`). Silverstripe/Laravel adapters may default off |
 | Shutdown | Leave `defaultIntegrations: true` so uncaught errors flush |
 | Invalid key | The SDK stops sending for this PHP process after a permanent ingest error |
 
@@ -225,7 +227,7 @@ When tracing is off, `startTransaction` / `startSpan` return no-ops.
 
 ## Analytics
 
-PHP does not autocapture and has no cookie jar. Pass `userId` and/or `anonymousId` (browser ids forwarded on checkout APIs). `identify` / `setUser` stamp later errors and spans.
+PHP does not autocapture and has no cookie jar. Pass `userId` and/or `anonymousId` (browser ids forwarded on checkout APIs). `identify` / `setUser` stamp later errors and spans. Set `enableAnalytics: false` to no-op the facade (Silverstripe does this until YAML `enableAnalytics` is on).
 
 ```php
 $talaria = Talaria::getClient();

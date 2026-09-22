@@ -39,6 +39,7 @@ Analytics (server-side; no autocapture, no cookie jar):
 - Body: `{ "input": { "__className__": "IngestAnalyticsEventBatchInput", "events": [ { "__className__": "IngestAnalyticsEventInput", ... } ] } }`
 - `AnalyticsTransport` constructs its **own** Guzzle client.
 - `track` requires `userId` and/or `anonymousId` (browser ids forwarded by the caller)
+- Core `enableAnalytics` defaults true; when false the facade no-ops. Silverstripe YAML / `TALARIA_ENABLE_ANALYTICS` defaults off.
 
 - Even a single leftover event, span, or analytics item is a batch of one
 - `extra` → `extraJson` (JSON **string**); `tags` are string→string

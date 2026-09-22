@@ -20,6 +20,7 @@ use Talaria\Environment;
  * - TALARIA_COMMIT_SHA (optional)
  * - TALARIA_ENABLE_TRACING (optional; default off)
  * - TALARIA_TRACES_SAMPLE_RATE (optional; default 0.1 when tracing is on)
+ * - TALARIA_ENABLE_ANALYTICS (optional; default off — PHP + frontend browser)
  */
 class Config
 {
@@ -66,6 +67,7 @@ class Config
             'enforceDefaultLevel' => self::enforceDefaultLevel(),
             'defaultIntegrations' => true,
             'enableTracing' => self::enableTracing(),
+            'enableAnalytics' => self::enableAnalytics(),
             'ignoreErrors' => self::stringList($cfg->get('ignoreErrors')),
             'ignoreUrls' => self::stringList($cfg->get('ignoreUrls')),
         ];
@@ -171,6 +173,11 @@ class Config
             $browser['tracesSampleRate'] = self::tracesSampleRate();
         }
 
+        // Public pages only — CMS admin pageviews must not land in product analytics.
+        if (self::enableAnalytics() && $runtimeTag === 'silverstripe-frontend') {
+            $browser['enableAnalytics'] = true;
+        }
+
         $loggers = self::loggers();
         if ($loggers !== []) {
             $browser['loggers'] = $loggers;
@@ -183,7 +190,7 @@ class Config
             $browser['commitSha'] = $options['commitSha'];
         }
 
-        $userId = self::resolveMemberUserId();
+        $userId = self::currentMemberUserId();
         if ($userId !== null) {
             $browser['userId'] = $userId;
         }
@@ -257,14 +264,14 @@ class Config
      */
     public static function browserSdkVersion(): string
     {
-        $version = static::config()->get('browserSdkVersion') ?? '0.1.25';
+        $version = static::config()->get('browserSdkVersion') ?? '0.2.2';
         if (!is_string($version) || $version === '') {
-            return '0.1.25';
+            return '0.2.2';
         }
 
-        // Allow semver and npm tags like 0.1.25 or latest (prefer exact semver).
+        // Allow semver and npm tags like 0.2.2 or latest (prefer exact semver).
         if (preg_match('/^[a-zA-Z0-9._~+%-]+$/', $version) !== 1) {
-            return '0.1.25';
+            return '0.2.2';
         }
 
         return $version;
@@ -312,6 +319,29 @@ class Config
         $raw = static::config()->get('loggers');
 
         return SdkConfig::normalizeLoggers(is_array($raw) ? $raw : []);
+    }
+
+    /**
+     * Product analytics for the PHP client and the public-page browser inject.
+     * Off until YAML `enableAnalytics: true` or `TALARIA_ENABLE_ANALYTICS=true`.
+     */
+    public static function enableAnalytics(): bool
+    {
+        $env = self::env('TALARIA_ENABLE_ANALYTICS');
+        if ($env !== '') {
+            return self::resolveBool($env, false);
+        }
+
+        return self::resolveBool(static::config()->get('enableAnalytics'), false);
+    }
+
+    /**
+     * Current Member id when a user is logged in — used for PHP analytics identity
+     * and browser `userId`.
+     */
+    public static function currentMemberUserId(): ?string
+    {
+        return self::resolveMemberUserId();
     }
 
     public static function enableTracing(): bool

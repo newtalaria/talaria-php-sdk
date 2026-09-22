@@ -171,7 +171,7 @@ final class TalariaClient
             $this->identity,
             $this->analyticsQueue,
             $this->tracer,
-            fn (): bool => $this->closed || $this->analyticsDisabled,
+            fn (): bool => $this->closed || $this->analyticsDisabled || !$this->config->enableAnalytics,
         );
 
         if ($this->config->defaultIntegrations) {

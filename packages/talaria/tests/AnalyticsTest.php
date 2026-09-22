@@ -19,6 +19,22 @@ use Talaria\TalariaClient;
 
 final class AnalyticsTest extends TestCase
 {
+    public function testEnableAnalyticsFalseDropsTrack(): void
+    {
+        $analytics = new FakeAnalyticsTransport();
+        $client = $this->client($analytics, [
+            'anonymousId' => 'anon-1',
+            'enableAnalytics' => false,
+        ]);
+
+        self::assertFalse($client->analytics->isEnabled());
+        $client->analytics->track('product_viewed');
+        $client->flush();
+
+        self::assertSame(0, $analytics->batchCount());
+        self::assertSame(0, $client->analyticsQueueSize());
+    }
+
     public function testTrackRequiresIdentity(): void
     {
         $analytics = new FakeAnalyticsTransport();
@@ -96,6 +112,32 @@ final class AnalyticsTest extends TestCase
         self::assertSame('user_checkout', $wire['userId']);
         self::assertSame('sess-override', $wire['sessionId']);
         self::assertSame('google', $wire['utmSource']);
+    }
+
+    public function testPerCallOptionsForwardParsedContextAndEndUserAgent(): void
+    {
+        $analytics = new FakeAnalyticsTransport();
+        $client = $this->client($analytics);
+        $_SERVER['HTTP_USER_AGENT'] = 'Mozilla/5.0 (compatible; Googlebot/2.1)';
+
+        $client->analytics->track('checkout_started', ['value' => 10], [
+            'anonymousId' => 'from-browser',
+            'userId' => 'user_checkout',
+            'sessionId' => 'sess-override',
+            'browserName' => 'Chrome',
+            'browserVersion' => '126',
+            'device' => 'desktop',
+            'timezone' => 'Pacific/Auckland',
+        ]);
+        $client->flush();
+
+        $wire = $analytics->allEvents()[0]->toWire();
+        self::assertSame('Chrome', $wire['browserName']);
+        self::assertSame('126', $wire['browserVersion']);
+        self::assertSame('desktop', $wire['device']);
+        self::assertSame('Pacific/Auckland', $wire['timezone']);
+        self::assertSame('Mozilla/5.0 (compatible; Googlebot/2.1)', $wire['userAgent']);
+        unset($_SERVER['HTTP_USER_AGENT']);
     }
 
     public function testIdentifySetsUserForLaterErrors(): void

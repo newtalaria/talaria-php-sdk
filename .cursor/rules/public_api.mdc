@@ -39,7 +39,7 @@ PHPDoc; cast with `(string) $message` at runtime.
 ## Init options
 
 - Required: `dsn` or `baseUrl`, `apiKey`, `environment`
-- Optional: `release`, `sampleRate`, `enableTracing` (default `false`), `tracesSampleRate` (default `0.1` when tracing is on), `minLevel` (default `debug` — default/root level), `enforceDefaultLevel` (default `false`), `loggers` (named presets), `beforeSend`, `maxBatchSize`, `flushIntervalMs`, `defaultIntegrations`, `userId`, `anonymousId`, `sessionId`, `tags`, `httpTimeoutSeconds`
+- Optional: `release`, `sampleRate`, `enableTracing` (default `false`), `tracesSampleRate` (default `0.1` when tracing is on), `enableAnalytics` (default `true` on core; Silverstripe YAML defaults off), `minLevel` (default `debug` — default/root level), `enforceDefaultLevel` (default `false`), `loggers` (named presets), `beforeSend`, `maxBatchSize`, `flushIntervalMs`, `defaultIntegrations`, `userId`, `anonymousId`, `sessionId`, `tags`, `httpTimeoutSeconds`
 - `TalariaClient::addProcessor()` for per-request tag/extra enrichment (prefer over `setTags` on long-lived singletons)
 - Tag merge order (later wins): automatic `RuntimeContext` tags → init/global → processors → logger scope → per-call context
 

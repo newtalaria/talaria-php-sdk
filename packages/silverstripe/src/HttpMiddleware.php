@@ -11,7 +11,8 @@ use Talaria\Tracing\SpanKind;
 use Talaria\Tracing\SpanStatus;
 
 /**
- * SERVER span per HTTP request. Continues an incoming W3C `traceparent` when present.
+ * SERVER span per HTTP request when tracing is on, and Member identity for
+ * PHP analytics when that is on. Continues an incoming W3C `traceparent`.
  *
  * FQCN on implements: a `use …\HTTPMiddleware` import collides with this class
  * name because PHP class names are case-insensitive.
@@ -21,13 +22,32 @@ final class HttpMiddleware implements \SilverStripe\Control\Middleware\HTTPMiddl
     public function process(HTTPRequest $request, callable $delegate)
     {
         $client = self::client();
-        if ($client === null || !$client->getConfig()->enableTracing) {
+        if ($client === null) {
             return $delegate($request);
+        }
+
+        $tracing = $client->getConfig()->enableTracing;
+        $analytics = $client->getConfig()->enableAnalytics;
+        if (!$tracing && !$analytics) {
+            return $delegate($request);
+        }
+
+        if (!$tracing) {
+            $client->setUser(null);
+            self::bindMember($client);
+            try {
+                return $delegate($request);
+            } finally {
+                $client->flush();
+            }
         }
 
         $client->clearBreadcrumbs();
         $client->setUser(null);
         $client->getTracer()->reset();
+        if ($analytics) {
+            self::bindMember($client);
+        }
 
         $method = strtoupper((string) $request->httpMethod());
         $route = '/' . ltrim((string) $request->getURL(), '/');
@@ -72,6 +92,14 @@ final class HttpMiddleware implements \SilverStripe\Control\Middleware\HTTPMiddl
             $span->end();
             // FPM may recycle before the shutdown flush; send this request's spans now.
             $client->flush();
+        }
+    }
+
+    private static function bindMember(TalariaClient $client): void
+    {
+        $userId = Config::currentMemberUserId();
+        if ($userId !== null) {
+            $client->setUser($userId);
         }
     }
 

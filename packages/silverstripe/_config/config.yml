@@ -34,6 +34,8 @@ Talaria\SilverStripe\Config:
   sampleRate: 1.0
   enableTracing: false
   # tracesSampleRate: 0.1
+  # Product analytics (PHP + public-page browser). Off until true or TALARIA_ENABLE_ANALYTICS.
+  enableAnalytics: false
   # Optional PHP ignore lists (substring or /regex/flags).
   # ignoreErrors:
   #   - 'Ignore this message'
@@ -46,7 +48,7 @@ Talaria\SilverStripe\Config:
   #   - 'googletagmanager.com'
   enableBrowserCms: true
   enableBrowserFrontend: true
-  browserSdkVersion: '0.1.25'
+  browserSdkVersion: '0.2.2'
   # Optional named logger presets for Approach B (Talaria::logger('name'))
   # loggers:
   #   businessDirectory:

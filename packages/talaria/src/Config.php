@@ -56,6 +56,12 @@ final class Config
      * are always kept. Default 0.1 when tracing is enabled and the option is omitted.
      */
     public readonly float $tracesSampleRate;
+    /**
+     * Product analytics (`track` / `identify` / `page`). Default on for plain PHP
+     * (every call is explicit — no autocapture). Framework adapters such as
+     * Silverstripe pass `false` until YAML / `TALARIA_ENABLE_ANALYTICS` is on.
+     */
+    public readonly bool $enableAnalytics;
 
     /**
      * @param array{
@@ -82,6 +88,7 @@ final class Config
      *   ignoreUrls?: list<string>,
      *   enableTracing?: bool,
      *   tracesSampleRate?: float|int,
+     *   enableAnalytics?: bool,
      * } $options
      */
     public function __construct(array $options)
@@ -153,6 +160,7 @@ final class Config
         }
         $this->enableTracing = $enableTracing || $tracesSampleRate > 0.0;
         $this->tracesSampleRate = $tracesSampleRate;
+        $this->enableAnalytics = (bool) ($options['enableAnalytics'] ?? true);
     }
 
     /**

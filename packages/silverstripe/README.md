@@ -25,6 +25,7 @@ TALARIA_RELEASE="1.2.3"
 # TALARIA_COMMIT_SHA="…"
 # TALARIA_ENABLE_TRACING="true"
 # TALARIA_TRACES_SAMPLE_RATE="0.1"
+# TALARIA_ENABLE_ANALYTICS="true"
 # TALARIA_BROWSER_DSN="https://api.newtalaria.com"
 ```
 
@@ -54,9 +55,10 @@ Talaria\SilverStripe\Config:
     team: 'platform'
   enableTracing: false
   tracesSampleRate: 0.1
+  enableAnalytics: false
   enableBrowserCms: true
   enableBrowserFrontend: true
-  browserSdkVersion: '0.1.25'
+  browserSdkVersion: '0.2.2'
 ```
 
 YAML `minLevel` (default **warning**) applies to the Monolog handler and the shared client. Flush again after YAML changes.
@@ -109,9 +111,26 @@ Off until `TALARIA_ENABLE_TRACING=true` or YAML `enableTracing: true` (or a `tra
 | Outbound HTTP | Injector `GuzzleHttp\Client` + `traceparent` (ingest clients are not wrapped) |
 | Queued jobs | Producer / consumer spans when `symbiote/silverstripe-queuedjobs` is installed |
 
+## Analytics
+
+Off until `TALARIA_ENABLE_ANALYTICS=true` or YAML `enableAnalytics: true`. That flag turns on:
+
+- **PHP** — `Talaria::analytics()->track` / `identify` / `page` (no autocapture; pass `userId` and/or `anonymousId`, or rely on the logged-in Member)
+- **Public pages** — browser `enableAnalytics` so `@newtalaria/browser` opts in and autocaptures `$pageview`
+
+CMS admin never gets product analytics. For a cookie banner, leave the flag off and call `window.Talaria.analytics.optIn()` after consent.
+
+```php
+use Talaria\Talaria;
+
+Talaria::analytics()->track('order_completed', ['total' => 129.0], [
+    'anonymousId' => $browserAnonymousId, // forwarded from the browser on guests
+]);
+```
+
 ## Browser JS
 
-The same env vars can load [`@newtalaria/browser`](https://www.npmjs.com/package/@newtalaria/browser) on CMS admin and public pages. Pin with `browserSdkVersion`. Details: [client/README.md](client/README.md).
+The same env vars can load [`@newtalaria/browser`](https://www.npmjs.com/package/@newtalaria/browser) on CMS admin and public pages. Pin with `browserSdkVersion` (default **0.2.2**, the first release with `Talaria.analytics`). Details: [client/README.md](client/README.md).
 
 ## License
 

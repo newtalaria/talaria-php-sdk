@@ -38,6 +38,9 @@ TALARIA_COMMIT_SHA="…"   # optional; enables GitHub source context on stack fr
 # TALARIA_ENABLE_TRACING="true"
 # TALARIA_TRACES_SAMPLE_RATE="0.1"
 
+# Optional product analytics (off by default) — PHP + public-page browser
+# TALARIA_ENABLE_ANALYTICS="true"
+
 # Optional: browser inject only when the PHP DSN is not reachable from the browser
 # (e.g. Docker-internal HTTP behind an HTTPS site).
 # TALARIA_BROWSER_DSN="https://api.newtalaria.com"
@@ -78,9 +81,10 @@ Talaria\SilverStripe\Config:
   flushIntervalMs: 2000
   enableTracing: false
   # tracesSampleRate: 0.1
+  enableAnalytics: false
   enableBrowserCms: true
   enableBrowserFrontend: true
-  browserSdkVersion: '0.1.25'
+  browserSdkVersion: '0.2.2'
   browserReplaysSessionSampleRate: 0
   browserReplaysOnErrorSampleRate: 1.0
 ```
@@ -387,6 +391,42 @@ For apps that construct their own client (plain PHP), use init `beforeSend` to r
 
 ---
 
+## Product analytics
+
+Off until YAML `enableAnalytics: true` or `TALARIA_ENABLE_ANALYTICS=true` (org and project must also be on in the dashboard, and the key needs `analyticsWrite`). One flag covers both sides:
+
+| Side | What turns on |
+| --- | --- |
+| PHP | `Talaria::analytics()->track` / `identify` / `page` — no autocapture. Logged-in Member is bound as `userId` on each request. Guests need a forwarded `anonymousId`. |
+| Public pages | Browser inject gets `enableAnalytics: true`, so `@newtalaria/browser` opts in and autocaptures `$pageview` on load and History changes |
+| CMS admin | Never opted in — admin pageviews stay out of product analytics |
+
+```php
+use SilverStripe\Core\Injector\Injector;
+use Talaria\Talaria;
+use Talaria\TalariaClient;
+
+Talaria::analytics()->identify((string) $member->ID, ['plan' => 'team']);
+
+Talaria::analytics()->track('order_completed', ['total' => 129.0], [
+    'anonymousId' => $browserAnonymousId, // localStorage `talaria.anonymousId`
+    'sessionId' => $browserSessionId,
+]);
+
+// Same client from Injector:
+Injector::inst()->get(TalariaClient::class)->analytics->page();
+```
+
+For a cookie banner, leave the YAML flag off. Errors and replay still start with `enableBrowserFrontend`. After consent:
+
+```js
+window.Talaria.analytics.optIn();
+```
+
+Flush after YAML changes: `vendor/bin/sake dev/build flush=1`.
+
+---
+
 ## Optional browser inject
 
 With the same env vars, the module can load [`@newtalaria/browser`](https://www.npmjs.com/package/@newtalaria/browser) from jsDelivr into:
@@ -394,7 +434,7 @@ With the same env vars, the module can load [`@newtalaria/browser`](https://www.
 - CMS admin (`LeftAndMain`) when `enableBrowserCms` is true  
 - Public pages (`ContentController`) when `enableBrowserFrontend` is true  
 
-Pin the npm version with `browserSdkVersion` (default **`0.1.25`**). Replay session sampling defaults to off; on-error clips can be enabled via YAML.
+Pin the npm version with `browserSdkVersion` (default **`0.2.2`**, required for `Talaria.analytics`). Replay session sampling defaults to off; on-error clips can be enabled via YAML.
 
 Details: [`client/README.md`](../client/README.md). If public pages do not use `ContentController`, apply `Talaria\SilverStripe\FrontendExtension` on your page controller.
 
@@ -409,6 +449,7 @@ Details: [`client/README.md`](../client/README.md). If public pages do not use `
 | 401 / 403 | `TALARIA_API_KEY` belongs to the project |
 | No events in the dashboard | Flush config; confirm `TALARIA_ENVIRONMENT` matches the dashboard filter; call flush in long CLI scripts |
 | No traces / waterfalls | Tracing is off by default — set `TALARIA_ENABLE_TRACING=true` or YAML `enableTracing: true`, then `sake dev/build flush=1`. Errors are always sampled; successful requests follow `tracesSampleRate` (default 0.1) |
+| No analytics events | Org + project analytics on in the dashboard; YAML `enableAnalytics: true` or `TALARIA_ENABLE_ANALYTICS=true`; key has `analyticsWrite`; `browserSdkVersion` ≥ 0.2.2. PHP calls still need `userId` or `anonymousId` (Member covers logged-in visitors). |
 | Browser SDK missing on frontend | `enableBrowserFrontend`, `ContentController` / `FrontendExtension`, and `TALARIA_BROWSER_DSN` if needed |
 
 More: [PHP SDK README](../../talaria/README.md) · [www.newtalaria.com/docs/sdk/silverstripe](https://www.newtalaria.com/docs/sdk/silverstripe)
