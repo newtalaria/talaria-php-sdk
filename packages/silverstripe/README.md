@@ -45,20 +45,20 @@ Missing DSN or key disables ingest safely — install and flush will not crash.
 ---
 Name: app-talaria
 After:
-  - '#talaria'
-  - '#talaria-browser'
+  - "#talaria"
+  - "#talaria-browser"
 ---
 Talaria\SilverStripe\Config:
   minLevel: warning
-  service: 'my-site'
+  service: "my-site"
   tags:
-    team: 'platform'
+    team: "platform"
   enableTracing: false
   tracesSampleRate: 0.1
   enableAnalytics: false
   enableBrowserCms: true
   enableBrowserFrontend: true
-  browserSdkVersion: '0.2.2'
+  browserSdkVersion: "0.3.0"
 ```
 
 YAML `minLevel` (default **warning**) applies to the Monolog handler and the shared client. Flush again after YAML changes.
@@ -104,12 +104,12 @@ For scoped tags, `child`, and `captureException`, wrap the Injector `TalariaClie
 
 Off until `TALARIA_ENABLE_TRACING=true` or YAML `enableTracing: true` (or a `tracesSampleRate` greater than 0). Head sampling: **100% of error transactions**, default **10%** of successful.
 
-| Signal | Instrumentation |
-| --- | --- |
-| Incoming HTTP | SERVER span per request; continues W3C `traceparent` |
-| MySQL | CLIENT spans per query (N+1 stays visible) |
-| Outbound HTTP | Injector `GuzzleHttp\Client` + `traceparent` (ingest clients are not wrapped) |
-| Queued jobs | Producer / consumer spans when `symbiote/silverstripe-queuedjobs` is installed |
+| Signal        | Instrumentation                                                                |
+| ------------- | ------------------------------------------------------------------------------ |
+| Incoming HTTP | SERVER span per request; continues W3C `traceparent`                           |
+| MySQL         | CLIENT spans per query (N+1 stays visible)                                     |
+| Outbound HTTP | Injector `GuzzleHttp\Client` + `traceparent` (ingest clients are not wrapped)  |
+| Queued jobs   | Producer / consumer spans when `symbiote/silverstripe-queuedjobs` is installed |
 
 ## Analytics
 
@@ -130,7 +130,7 @@ Talaria::analytics()->track('order_completed', ['total' => 129.0], [
 
 ## Browser JS
 
-The same env vars can load [`@newtalaria/browser`](https://www.npmjs.com/package/@newtalaria/browser) on CMS admin and public pages. Pin with `browserSdkVersion` (default **0.2.2**, the first release with `Talaria.analytics`). Details: [client/README.md](client/README.md).
+The same env vars can load [`@newtalaria/browser`](https://www.npmjs.com/package/@newtalaria/browser) on CMS admin and public pages. Pin with `browserSdkVersion` (default **0.3.0**; `Talaria.analytics` needs 0.2.2 or later). Details: [client/README.md](client/README.md).
 
 ## License
 

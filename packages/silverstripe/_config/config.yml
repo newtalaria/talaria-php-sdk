@@ -48,7 +48,7 @@ Talaria\SilverStripe\Config:
   #   - 'googletagmanager.com'
   enableBrowserCms: true
   enableBrowserFrontend: true
-  browserSdkVersion: '0.2.2'
+  browserSdkVersion: '0.3.0'
   # Optional named logger presets for Approach B (Talaria::logger('name'))
   # loggers:
   #   businessDirectory:

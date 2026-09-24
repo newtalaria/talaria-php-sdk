@@ -84,7 +84,7 @@ Talaria\SilverStripe\Config:
   enableAnalytics: false
   enableBrowserCms: true
   enableBrowserFrontend: true
-  browserSdkVersion: '0.2.2'
+  browserSdkVersion: '0.3.0'
   browserReplaysSessionSampleRate: 0
   browserReplaysOnErrorSampleRate: 1.0
 ```
@@ -434,7 +434,7 @@ With the same env vars, the module can load [`@newtalaria/browser`](https://www.
 - CMS admin (`LeftAndMain`) when `enableBrowserCms` is true  
 - Public pages (`ContentController`) when `enableBrowserFrontend` is true  
 
-Pin the npm version with `browserSdkVersion` (default **`0.2.2`**, required for `Talaria.analytics`). Replay session sampling defaults to off; on-error clips can be enabled via YAML.
+Pin the npm version with `browserSdkVersion` (default **`0.3.0`**; `Talaria.analytics` needs 0.2.2 or later). Replay session sampling defaults to off; on-error clips can be enabled via YAML.
 
 Details: [`client/README.md`](../client/README.md). If public pages do not use `ContentController`, apply `Talaria\SilverStripe\FrontendExtension` on your page controller.
 
