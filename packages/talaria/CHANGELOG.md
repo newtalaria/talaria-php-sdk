@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.2.1 - 2026-09-27
+
+- Package docs point at the marketing guides.
+
 ## 1.2.0 - 2026-09-27
 
 - Tracing, analytics, and the event sample rate come from `POST /sdk/getConfig`.

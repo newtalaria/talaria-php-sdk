@@ -7,6 +7,7 @@ namespace Talaria\Laravel\Tests;
 use Orchestra\Testbench\TestCase as BaseTestCase;
 use Talaria\Laravel\TalariaServiceProvider;
 use Talaria\Talaria;
+use Talaria\TalariaClient;
 use Talaria\Tracing\SpanTransportInterface;
 use Talaria\Transport\TransportInterface;
 
@@ -21,6 +22,12 @@ abstract class TestCase extends BaseTestCase
         $this->transport = new RecordingTransport();
         $this->spans = new RecordingSpanTransport();
         parent::setUp();
+        $this->app->make(TalariaClient::class)->getConfig()->applySdkDocument([
+            'schemaVersion' => 1,
+            'active' => true,
+            'tracing' => ['enabled' => true, 'tracesSampleRate' => 1.0],
+            'analytics' => ['enabled' => true],
+        ]);
     }
 
     protected function tearDown(): void
