@@ -178,6 +178,55 @@ final class TalariaClient
             $this->errorIntegration = new ErrorIntegration($this);
             $this->errorIntegration->register();
         }
+
+        $remoteConfig = !is_array($options) || ($options['remoteConfig'] ?? true) !== false;
+        if ($remoteConfig && $transport instanceof ServerpodHttpTransport) {
+            $this->bootstrapPolicy($transport);
+        }
+    }
+
+    private function bootstrapPolicy(ServerpodHttpTransport $transport): void
+    {
+        $key = 'talaria.sdkConfig.' . substr(hash('sha256', $this->config->apiKey), 0, 16);
+        $cached = null;
+        if (function_exists('apcu_fetch')) {
+            $hit = apcu_fetch($key, $ok);
+            $cached = $ok && is_array($hit) ? $hit : null;
+        }
+        if (is_array($cached) && isset($cached['fetchedAt'], $cached['document']) && is_array($cached['document'])) {
+            $ttl = (int) ($cached['document']['ttlSeconds'] ?? 300);
+            $ttl = max(60, min(3600, $ttl));
+            if ((time() - (int) $cached['fetchedAt']) < $ttl) {
+                $this->config->applySdkDocument($cached['document']);
+
+                return;
+            }
+            $this->config->applySdkDocument($cached['document']);
+        }
+        try {
+            $document = $transport->postJson('sdk/getConfig', [
+                'input' => [
+                    '__className__' => 'GetSdkConfigInput',
+                    'schemaVersion' => 1,
+                    'sdkName' => 'talaria-php',
+                    'platform' => 'php',
+                    'revision' => is_array($cached) && is_array($cached['document'] ?? null)
+                        ? ($cached['document']['revision'] ?? null)
+                        : null,
+                ],
+            ], 0.2);
+            if (($document['unchanged'] ?? false) !== true) {
+                $this->config->applySdkDocument($document);
+                $stored = $document;
+            } else {
+                $stored = is_array($cached['document'] ?? null) ? $cached['document'] : null;
+            }
+            if (is_array($stored) && function_exists('apcu_store')) {
+                apcu_store($key, ['fetchedAt' => time(), 'document' => $stored], 3600);
+            }
+        } catch (\Throwable) {
+            // Errors keep flowing. The next request tries again.
+        }
     }
 
     public function getConfig(): Config
@@ -698,6 +747,20 @@ final class TalariaClient
     private function handleTransportError(TransportException $error, string $signal): void
     {
         if (!$error->isPermanent()) {
+            return;
+        }
+        $parsed = $error->ingestError();
+        $signalOff = $parsed?->disabledSignal();
+        if ($signalOff === 'spans') {
+            $this->disableSpans();
+            return;
+        }
+        if ($signalOff === 'analytics') {
+            $this->analyticsDisabled = true;
+            return;
+        }
+        if ($signalOff === 'events') {
+            $this->eventsDisabled = true;
             return;
         }
         if ($error->isScopeOnly()) {

@@ -97,6 +97,38 @@ final class ServerpodHttpTransport implements TransportInterface
         );
     }
 
+    /**
+     * @param array<string, mixed> $json
+     * @return array<string, mixed>
+     */
+    public function postJson(string $path, array $json, float $timeoutSeconds = 0.2): array
+    {
+        $url = rtrim($this->baseUrl, '/') . '/' . ltrim($path, '/');
+        $response = $this->http->request('POST', $url, [
+            'headers' => [
+                'Content-Type' => 'application/json; charset=utf-8',
+                'X-API-Key' => $this->apiKey,
+            ],
+            'json' => $json,
+            'timeout' => $timeoutSeconds,
+        ]);
+        $status = $response->getStatusCode();
+        $raw = (string) $response->getBody();
+        if ($status < 200 || $status >= 300) {
+            $parsed = IngestError::parse($raw);
+            throw new TransportException(
+                "Talaria {$path} failed: HTTP {$status}",
+                $status,
+                className: $parsed->className,
+                retry: $parsed->retry,
+                bodyMessage: $parsed->message,
+            );
+        }
+        $decoded = json_decode($raw, true);
+
+        return is_array($decoded) ? $decoded : [];
+    }
+
     private static function formatErrorDetail(string $body, IngestError $parsed): string
     {
         $parts = array_filter([

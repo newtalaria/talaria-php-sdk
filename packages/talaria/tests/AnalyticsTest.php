@@ -270,6 +270,12 @@ final class AnalyticsTest extends TestCase
             'userId' => 'user-shared',
             'sessionId' => 'sess-shared',
         ], $events, spanTransport: $spans, analyticsTransport: $analytics);
+        $client->getConfig()->applySdkDocument([
+            'schemaVersion' => 1,
+            'active' => true,
+            'analytics' => ['enabled' => true],
+            'tracing' => ['enabled' => true, 'tracesSampleRate' => 1],
+        ]);
 
         $tx = $client->startTransaction('GET /checkout');
         $tx->end();
@@ -342,7 +348,7 @@ final class AnalyticsTest extends TestCase
         array $extraOptions = [],
         ?FakeTransport $events = null,
     ): TalariaClient {
-        return new TalariaClient(array_merge([
+        $client = new TalariaClient(array_merge([
             'dsn' => 'https://api.example.com',
             'apiKey' => 'tal_live_testkeytestkeytestkeytestkey123456',
             'environment' => 'development',
@@ -350,5 +356,15 @@ final class AnalyticsTest extends TestCase
             'maxBatchSize' => 50,
             'flushIntervalMs' => 60_000,
         ], $extraOptions), $events ?? new FakeTransport(), analyticsTransport: $analytics);
+        if (($extraOptions['enableAnalytics'] ?? true) !== false) {
+            $client->getConfig()->applySdkDocument([
+                'schemaVersion' => 1,
+                'active' => true,
+                'analytics' => ['enabled' => true],
+                'tracing' => ['enabled' => true, 'tracesSampleRate' => 1],
+            ]);
+        }
+
+        return $client;
     }
 }

@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 return [
-    'dsn' => env('TALARIA_DSN', 'https://api.newtalaria.com'),
+    'dsn' => env('TALARIA_DSN', 'https://ingest.newtalaria.com'),
     'api_key' => env('TALARIA_API_KEY'),
     'environment' => env('TALARIA_ENVIRONMENT', env('APP_ENV', 'production')),
     'release' => env('TALARIA_RELEASE'),

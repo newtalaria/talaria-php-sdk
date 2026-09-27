@@ -66,6 +66,41 @@ final class IngestError
         return str_contains(strtolower((string) $this->message), 'lacks required scope');
     }
 
+    public function isGlobalCredentialFailure(): bool
+    {
+        $name = $this->className ?? '';
+        if (str_contains($name, 'ApiUnauthorizedException')) {
+            return true;
+        }
+        if (str_contains($name, 'ApiDisallowedDomainException')) {
+            return true;
+        }
+        if (str_contains($name, 'ApiNotFoundException')) {
+            return true;
+        }
+
+        return false;
+    }
+
+    public function disabledSignal(): ?string
+    {
+        if (!$this->isPermanent() || $this->isGlobalCredentialFailure() || $this->isScopeOnly()) {
+            return null;
+        }
+        $message = strtolower((string) $this->message);
+        if (str_contains($message, 'tracing is disabled') || str_contains($message, 'performance is disabled')) {
+            return 'spans';
+        }
+        if (str_contains($message, 'analytics is disabled')) {
+            return 'analytics';
+        }
+        if (str_contains($message, 'session replay is disabled')) {
+            return 'replay';
+        }
+
+        return null;
+    }
+
     private static function stringOf(mixed $value): ?string
     {
         if (!is_string($value)) {

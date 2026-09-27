@@ -45,7 +45,12 @@ final class LoggerApiTest extends TestCase
     public function testSampleRateZeroDropsAll(): void
     {
         $transport = new FakeTransport();
-        $client = $this->makeClient($transport, ['sampleRate' => 0]);
+        $client = $this->makeClient($transport);
+        $client->getConfig()->applySdkDocument([
+            'schemaVersion' => 1,
+            'active' => true,
+            'events' => ['sampleRate' => 0],
+        ]);
 
         $client->fatal('nope');
         $client->captureException(new \RuntimeException('nope'));

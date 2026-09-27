@@ -80,15 +80,20 @@ final class GuzzleMiddlewareTest extends TestCase
 
     private function client(FakeSpanTransport $spans): TalariaClient
     {
-        return new TalariaClient([
+        $client = new TalariaClient([
             'dsn' => 'https://api.example.com',
             'apiKey' => 'tal_live_testkeytestkeytestkeytestkey123456',
             'environment' => 'development',
             'defaultIntegrations' => false,
-            'enableTracing' => true,
-            'tracesSampleRate' => 1.0,
             'maxBatchSize' => 50,
             'flushIntervalMs' => 60_000,
         ], new FakeTransport(), spanTransport: $spans);
+        $client->getConfig()->applySdkDocument([
+            'schemaVersion' => 1,
+            'active' => true,
+            'tracing' => ['enabled' => true, 'tracesSampleRate' => 1],
+        ]);
+
+        return $client;
     }
 }

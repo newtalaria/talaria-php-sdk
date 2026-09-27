@@ -28,7 +28,7 @@ composer require talaria/silverstripe
 Create a client key under **Project settings → Client keys** (`tal_live_…`), then set:
 
 ```bash
-TALARIA_DSN="https://api.newtalaria.com"
+TALARIA_DSN="https://ingest.newtalaria.com"
 TALARIA_API_KEY="tal_live_…"
 TALARIA_ENVIRONMENT="production"
 TALARIA_RELEASE="1.2.3"
@@ -43,7 +43,7 @@ TALARIA_COMMIT_SHA="…"   # optional; enables GitHub source context on stack fr
 
 # Optional: browser inject only when the PHP DSN is not reachable from the browser
 # (e.g. Docker-internal HTTP behind an HTTPS site).
-# TALARIA_BROWSER_DSN="https://api.newtalaria.com"
+# TALARIA_BROWSER_DSN="https://ingest.newtalaria.com"
 ```
 
 Missing DSN or key disables the client safely so install / flush will not crash.
@@ -84,7 +84,7 @@ Talaria\SilverStripe\Config:
   enableAnalytics: false
   enableBrowserCms: true
   enableBrowserFrontend: true
-  browserSdkVersion: '0.3.0'
+  browserSdkVersion: '0.4.0'
   browserReplaysSessionSampleRate: 0
   browserReplaysOnErrorSampleRate: 1.0
 ```
@@ -434,7 +434,7 @@ With the same env vars, the module can load [`@newtalaria/browser`](https://www.
 - CMS admin (`LeftAndMain`) when `enableBrowserCms` is true  
 - Public pages (`ContentController`) when `enableBrowserFrontend` is true  
 
-Pin the npm version with `browserSdkVersion` (default **`0.3.0`**; `Talaria.analytics` needs 0.2.2 or later). Replay session sampling defaults to off; on-error clips can be enabled via YAML.
+Pin the npm version with `browserSdkVersion` (default **`0.4.0`**). Replay and tracing follow the project policy document.
 
 Details: [`client/README.md`](../client/README.md). If public pages do not use `ContentController`, apply `Talaria\SilverStripe\FrontendExtension` on your page controller.
 

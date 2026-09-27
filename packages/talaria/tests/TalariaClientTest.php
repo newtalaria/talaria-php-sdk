@@ -112,9 +112,13 @@ final class TalariaClientTest extends TestCase
             'apiKey' => 'tal_live_testkeytestkeytestkeytestkey123456',
             'environment' => 'development',
             'defaultIntegrations' => false,
-            'sampleRate' => 0,
             'maxBatchSize' => 1,
         ], $transport);
+        $client->getConfig()->applySdkDocument([
+            'schemaVersion' => 1,
+            'active' => true,
+            'events' => ['sampleRate' => 0],
+        ]);
 
         $client->captureMessage('nope');
         $client->flush();
@@ -290,9 +294,13 @@ final class TalariaClientTest extends TestCase
             'apiKey' => 'tal_live_testkeytestkeytestkeytestkey123456',
             'environment' => 'development',
             'defaultIntegrations' => false,
-            'enableTracing' => true,
             'maxBatchSize' => 1,
         ], $transport, spanTransport: $spans);
+        $client->getConfig()->applySdkDocument([
+            'schemaVersion' => 1,
+            'active' => true,
+            'tracing' => ['enabled' => true, 'tracesSampleRate' => 1],
+        ]);
 
         $client->captureMessage('first');
         $client->captureMessage('second');
@@ -310,12 +318,16 @@ final class TalariaClientTest extends TestCase
             'apiKey' => 'tal_live_testkeytestkeytestkeytestkey123456',
             'environment' => 'development',
             'defaultIntegrations' => false,
-            'enableTracing' => true,
             'tags' => ['service' => 'api'],
             'userId' => 'init-user',
             'maxBatchSize' => 50,
             'flushIntervalMs' => 60_000,
         ], $transport);
+        $client->getConfig()->applySdkDocument([
+            'schemaVersion' => 1,
+            'active' => true,
+            'tracing' => ['enabled' => true, 'tracesSampleRate' => 1],
+        ]);
 
         $client->setUser('request-user');
         $client->setExtra(['cart_id' => 'abc']);

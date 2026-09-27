@@ -21,15 +21,14 @@ The service provider and `Talaria` facade are auto-discovered. Publishing config
 Create a client key under **Project settings → Client keys** (`tal_live_…`):
 
 ```env
-TALARIA_DSN=https://api.newtalaria.com
+TALARIA_DSN=https://ingest.newtalaria.com
 TALARIA_API_KEY=tal_live_…
 TALARIA_ENVIRONMENT=production
 TALARIA_RELEASE=1.4.2
 # TALARIA_COMMIT_SHA=
 # TALARIA_SERVICE="${APP_NAME}"
 # TALARIA_MIN_LEVEL=warning
-# TALARIA_ENABLE_TRACING=false
-# TALARIA_TRACES_SAMPLE_RATE=0.1
+# Tracing and analytics follow the project in the dashboard.
 ```
 
 Missing DSN or key disables ingest safely. Do not call `Talaria::init()` yourself — the provider owns the client.

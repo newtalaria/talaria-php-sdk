@@ -45,7 +45,7 @@ final class ConfigTest extends TestCase
             'environment' => 'development',
         ]);
 
-        self::assertTrue($cfg->enableAnalytics);
+        self::assertFalse($cfg->enableAnalytics);
     }
 
     public function testEnableAnalyticsCanDisable(): void

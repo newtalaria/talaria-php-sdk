@@ -28,16 +28,14 @@ Create a client key under **Project settings → Client keys** (`tal_live_…`).
 use Talaria\Talaria;
 
 Talaria::init([
-    'dsn' => getenv('TALARIA_DSN') ?: 'https://api.newtalaria.com',
+    'dsn' => getenv('TALARIA_DSN') ?: 'https://ingest.newtalaria.com',
     'apiKey' => getenv('TALARIA_API_KEY'),
     'environment' => getenv('TALARIA_ENVIRONMENT') ?: 'production', // staging | development
     'release' => getenv('TALARIA_RELEASE') ?: null,
     'commitSha' => getenv('TALARIA_COMMIT_SHA') ?: null,
     'minLevel' => 'warning',
     'sampleRate' => 1.0,
-    'enableTracing' => false,
-    'tracesSampleRate' => 0.1,
-    'enableAnalytics' => true,
+    // Tracing, analytics, and sample rates come from POST /sdk/getConfig.
     'tags' => [
         'service' => 'api',
         'platform' => 'php',
@@ -139,7 +137,7 @@ Gates run in order. Filtered calls are quiet no-ops.
 
 ```php
 Talaria::init([
-    'dsn' => 'https://api.newtalaria.com',
+    'dsn' => 'https://ingest.newtalaria.com',
     'apiKey' => getenv('TALARIA_API_KEY'),
     'environment' => 'production',
     'minLevel' => 'warning',
@@ -193,7 +191,7 @@ Turn tracing on in the project first, then set `enableTracing: true` or `tracesS
 
 ```php
 Talaria::init([
-    'dsn' => 'https://api.newtalaria.com',
+    'dsn' => 'https://ingest.newtalaria.com',
     'apiKey' => getenv('TALARIA_API_KEY'),
     'environment' => 'production',
     'enableTracing' => true,

@@ -22,6 +22,15 @@ final class TransportException extends \RuntimeException
         parent::__construct($message, 0, $previous);
     }
 
+    public function ingestError(): IngestError
+    {
+        return new IngestError(
+            className: $this->className,
+            message: $this->bodyMessage ?? $this->getMessage(),
+            retry: $this->retry,
+        );
+    }
+
     public function isPermanent(): bool
     {
         return (new IngestError(

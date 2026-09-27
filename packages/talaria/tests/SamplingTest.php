@@ -122,6 +122,13 @@ final class SamplingTest extends TestCase
             'environment' => 'development',
             'enableTracing' => true,
         ]);
+        self::assertFalse($config->enableTracing);
+        self::assertSame(0.0, $config->tracesSampleRate);
+        $config->applySdkDocument([
+            'schemaVersion' => 1,
+            'active' => true,
+            'tracing' => ['enabled' => true, 'tracesSampleRate' => 0.1],
+        ]);
         self::assertTrue($config->enableTracing);
         self::assertSame(0.1, $config->tracesSampleRate);
     }
@@ -134,6 +141,12 @@ final class SamplingTest extends TestCase
             'environment' => 'development',
             'tracesSampleRate' => 0.5,
         ]);
+        self::assertFalse($config->enableTracing);
+        $config->applySdkDocument([
+            'schemaVersion' => 1,
+            'active' => true,
+            'tracing' => ['enabled' => true, 'tracesSampleRate' => 0.5],
+        ]);
         self::assertTrue($config->enableTracing);
         self::assertSame(0.5, $config->tracesSampleRate);
     }
@@ -143,7 +156,7 @@ final class SamplingTest extends TestCase
      */
     private function client(array $overrides, FakeSpanTransport $spans): TalariaClient
     {
-        return new TalariaClient(array_merge([
+        $client = new TalariaClient(array_merge([
             'dsn' => 'https://api.example.com',
             'apiKey' => 'tal_live_testkeytestkeytestkeytestkey123456',
             'environment' => 'development',
@@ -151,5 +164,17 @@ final class SamplingTest extends TestCase
             'maxBatchSize' => 50,
             'flushIntervalMs' => 60_000,
         ], $overrides), new FakeTransport(), spanTransport: $spans);
+        $hasRate = array_key_exists('tracesSampleRate', $overrides);
+        $rate = $hasRate ? (float) $overrides['tracesSampleRate'] : 0.1;
+        $enabled = ($overrides['enableTracing'] ?? false) === true || ($hasRate && $rate > 0);
+        if ($enabled) {
+            $client->getConfig()->applySdkDocument([
+                'schemaVersion' => 1,
+                'active' => true,
+                'tracing' => ['enabled' => true, 'tracesSampleRate' => $rate],
+            ]);
+        }
+
+        return $client;
     }
 }

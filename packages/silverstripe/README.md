@@ -18,7 +18,7 @@ composer require talaria/silverstripe
 Create a client key under **Project settings → Client keys** (`tal_live_…`), then set environment variables:
 
 ```bash
-TALARIA_DSN="https://api.newtalaria.com"
+TALARIA_DSN="https://ingest.newtalaria.com"
 TALARIA_API_KEY="tal_live_…"
 TALARIA_ENVIRONMENT="production"
 TALARIA_RELEASE="1.2.3"
@@ -26,7 +26,7 @@ TALARIA_RELEASE="1.2.3"
 # TALARIA_ENABLE_TRACING="true"
 # TALARIA_TRACES_SAMPLE_RATE="0.1"
 # TALARIA_ENABLE_ANALYTICS="true"
-# TALARIA_BROWSER_DSN="https://api.newtalaria.com"
+# TALARIA_BROWSER_DSN="https://ingest.newtalaria.com"
 ```
 
 Flush config so Injector and YAML take effect:
@@ -58,7 +58,7 @@ Talaria\SilverStripe\Config:
   enableAnalytics: false
   enableBrowserCms: true
   enableBrowserFrontend: true
-  browserSdkVersion: "0.3.0"
+  browserSdkVersion: "0.4.0"
 ```
 
 YAML `minLevel` (default **warning**) applies to the Monolog handler and the shared client. Flush again after YAML changes.
@@ -130,7 +130,7 @@ Talaria::analytics()->track('order_completed', ['total' => 129.0], [
 
 ## Browser JS
 
-The same env vars can load [`@newtalaria/browser`](https://www.npmjs.com/package/@newtalaria/browser) on CMS admin and public pages. Pin with `browserSdkVersion` (default **0.3.0**; `Talaria.analytics` needs 0.2.2 or later). Details: [client/README.md](client/README.md).
+The same env vars can load [`@newtalaria/browser`](https://www.npmjs.com/package/@newtalaria/browser) on CMS admin and public pages. Pin with `browserSdkVersion` (default **0.4.0**). Details: [client/README.md](client/README.md).
 
 ## License
 

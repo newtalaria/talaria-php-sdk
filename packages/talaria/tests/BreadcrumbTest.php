@@ -40,6 +40,11 @@ final class BreadcrumbTest extends TestCase
             'maxBatchSize' => 50,
             'flushIntervalMs' => 60_000,
         ], $transport, spanTransport: $spans);
+        $client->getConfig()->applySdkDocument([
+            'schemaVersion' => 1,
+            'active' => true,
+            'tracing' => ['enabled' => true, 'tracesSampleRate' => 1],
+        ]);
 
         $root = $client->startTransaction('GET /checkout', SpanKind::Server);
         for ($i = 0; $i < 60; $i++) {

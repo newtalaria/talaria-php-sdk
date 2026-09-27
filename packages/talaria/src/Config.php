@@ -15,7 +15,7 @@ final class Config
     public readonly string $environment;
     public readonly ?string $release;
     public readonly ?string $commitSha;
-    public readonly float $sampleRate;
+    public float $sampleRate;
     public readonly int $maxBatchSize;
     public readonly int $flushIntervalMs;
     public readonly bool $defaultIntegrations;
@@ -50,18 +50,18 @@ final class Config
     /**
      * Tracing is off until this is true or {@see $tracesSampleRate} > 0.
      */
-    public readonly bool $enableTracing;
+    public bool $enableTracing;
     /**
      * Head-based sample rate for successful transactions. Error transactions
      * are always kept. Default 0.1 when tracing is enabled and the option is omitted.
      */
-    public readonly float $tracesSampleRate;
+    public float $tracesSampleRate;
     /**
      * Product analytics (`track` / `identify` / `page`). Default on for plain PHP
      * (every call is explicit — no autocapture). Framework adapters such as
      * Silverstripe pass `false` until YAML / `TALARIA_ENABLE_ANALYTICS` is on.
      */
-    public readonly bool $enableAnalytics;
+    public bool $enableAnalytics;
 
     /**
      * @param array{
@@ -152,15 +152,42 @@ final class Config
         $this->ignoreErrors = EventFilters::normalizePatterns($options['ignoreErrors'] ?? []);
         $this->ignoreUrls = EventFilters::normalizePatterns($options['ignoreUrls'] ?? []);
 
-        $enableTracing = (bool) ($options['enableTracing'] ?? false);
-        if (array_key_exists('tracesSampleRate', $options)) {
-            $tracesSampleRate = max(0.0, min(1.0, (float) $options['tracesSampleRate']));
-        } else {
-            $tracesSampleRate = $enableTracing ? 0.1 : 0.0;
+        $this->sampleRate = 1.0;
+        $this->enableTracing = false;
+        $this->tracesSampleRate = 0.0;
+        $this->enableAnalytics = false;
+        unset($options['enableTracing'], $options['tracesSampleRate'], $options['enableAnalytics'], $options['sampleRate']);
+    }
+
+    /**
+     * @param array<string, mixed> $document
+     */
+    public function applySdkDocument(array $document): void
+    {
+        if (($document['schemaVersion'] ?? 1) !== 1) {
+            return;
         }
-        $this->enableTracing = $enableTracing || $tracesSampleRate > 0.0;
-        $this->tracesSampleRate = $tracesSampleRate;
-        $this->enableAnalytics = (bool) ($options['enableAnalytics'] ?? true);
+        if (($document['unchanged'] ?? false) === true) {
+            return;
+        }
+        if (($document['active'] ?? true) === false) {
+            $this->enableTracing = false;
+            $this->tracesSampleRate = 0.0;
+            $this->enableAnalytics = false;
+            $this->sampleRate = 0.0;
+
+            return;
+        }
+        $events = is_array($document['events'] ?? null) ? $document['events'] : [];
+        $rate = $events['sampleRate'] ?? null;
+        $this->sampleRate = is_numeric($rate) ? max(0.0, min(1.0, (float) $rate)) : 1.0;
+        $tracing = is_array($document['tracing'] ?? null) ? $document['tracing'] : [];
+        $this->enableTracing = ($tracing['enabled'] ?? false) === true;
+        $this->tracesSampleRate = $this->enableTracing && is_numeric($tracing['tracesSampleRate'] ?? null)
+            ? max(0.0, min(1.0, (float) $tracing['tracesSampleRate']))
+            : 0.0;
+        $analytics = is_array($document['analytics'] ?? null) ? $document['analytics'] : [];
+        $this->enableAnalytics = ($analytics['enabled'] ?? false) === true;
     }
 
     /**
