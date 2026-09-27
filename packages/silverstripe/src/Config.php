@@ -12,19 +12,18 @@ use Talaria\Environment;
  * YAML / env-backed configuration for the Silverstripe adapter.
  *
  * Prefer environment variables:
- * - TALARIA_DSN
- * - TALARIA_BROWSER_DSN (optional; browser inject only — use when PHP DSN is not browser-reachable, e.g. http://host.docker.internal behind an HTTPS site)
  * - TALARIA_API_KEY
  * - TALARIA_ENVIRONMENT
+ * - TALARIA_DSN (optional; defaults to https://ingest.newtalaria.com)
+ * - TALARIA_BROWSER_DSN (optional; browser inject only — use when PHP DSN is not browser-reachable, e.g. http://host.docker.internal behind an HTTPS site)
  * - TALARIA_RELEASE (optional)
  * - TALARIA_COMMIT_SHA (optional)
- * - TALARIA_ENABLE_TRACING (optional; default off)
- * - TALARIA_TRACES_SAMPLE_RATE (optional; default 0.1 when tracing is on)
- * - TALARIA_ENABLE_ANALYTICS (optional; default off — PHP + frontend browser)
  */
 class Config
 {
     use Configurable;
+
+    private const DEFAULT_DSN = 'https://ingest.newtalaria.com';
 
     /**
      * @return array<string, mixed>
@@ -42,6 +41,9 @@ class Config
 
         if ($dsn === '') {
             $dsn = self::env('TALARIA_DSN');
+        }
+        if ($dsn === '') {
+            $dsn = self::DEFAULT_DSN;
         }
         if ($apiKey === '') {
             $apiKey = self::env('TALARIA_API_KEY');

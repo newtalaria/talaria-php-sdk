@@ -31,7 +31,7 @@ Packagist reads a root `composer.json`, so each package is mirrored:
 - Batched ingest to `/events/ingestBatch` and (when tracing is on) `/spans/ingestBatch`
 - Project API key auth (`X-API-Key`, `tal_live_…`)
 - Server-side fingerprinting — the SDK never computes issue groups
-- Tracing **off** until you opt in (`enableTracing` / `tracesSampleRate`)
+- Tracing, analytics, and sample rates follow [project configuration](https://www.newtalaria.com/docs/configuration)
 - PSR-3 `Talaria\Logger` on the core package; framework adapters wire exceptions, HTTP, and databases for you
 
 ## Develop

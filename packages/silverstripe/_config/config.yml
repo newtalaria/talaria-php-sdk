@@ -18,7 +18,7 @@ SilverStripe\Core\Injector\Injector:
       PushTalariaHandler: [ pushHandler, [ '%$talariaLogHandler' ] ]
 
 Talaria\SilverStripe\Config:
-  dsn: '`TALARIA_DSN`'
+  # DSN defaults to https://ingest.newtalaria.com. Set dsn here for another host.
   # Optional: browser inject only (falls back to dsn). Use when PHP DSN is not
   # reachable from the browser (e.g. http://host.docker.internal behind HTTPS).
   browserDsn: '`TALARIA_BROWSER_DSN`'
@@ -31,11 +31,6 @@ Talaria\SilverStripe\Config:
   enforceDefaultLevel: false
   maxBatchSize: 50
   flushIntervalMs: 2000
-  sampleRate: 1.0
-  enableTracing: false
-  # tracesSampleRate: 0.1
-  # Product analytics (PHP + public-page browser). Off until true or TALARIA_ENABLE_ANALYTICS.
-  enableAnalytics: false
   # Optional PHP ignore lists (substring or /regex/flags).
   # ignoreErrors:
   #   - 'Ignore this message'
