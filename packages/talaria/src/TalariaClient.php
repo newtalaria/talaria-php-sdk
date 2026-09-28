@@ -12,6 +12,7 @@ use Talaria\Analytics\NullAnalyticsTransport;
 use Talaria\Context\RuntimeContext;
 use Talaria\Exception\TransportException;
 use Talaria\Integration\ErrorIntegration;
+use Talaria\Integration\UncaughtExceptionDump;
 use Talaria\Protocol\ExceptionPayloadBuilder;
 use Talaria\Tracing\BreadcrumbBuffer;
 use Talaria\Tracing\NullSpanTransport;
@@ -46,6 +47,16 @@ final class TalariaClient
     private bool $analyticsDisabled = false;
     private bool $loggedIngestDisable = false;
     private ?ErrorIntegration $errorIntegration = null;
+
+    /**
+     * Throwables already enqueued this request. Identity, not message text.
+     *
+     * @var \SplObjectStorage<\Throwable, null>
+     */
+    private \SplObjectStorage $capturedThrowables;
+
+    /** Engine "Uncaught … thrown" dump already sent or suppressed this request. */
+    private bool $engineFatalReported = false;
 
     /** Mutable default/root floor; initialized from config. */
     private SeverityLevel $minLevel;
@@ -101,6 +112,7 @@ final class TalariaClient
         $this->loggers = $this->config->loggers;
         $this->beforeSend = $this->config->beforeSend;
         $this->breadcrumbs = new BreadcrumbBuffer();
+        $this->capturedThrowables = new \SplObjectStorage();
 
         $transport ??= new ServerpodHttpTransport(
             $this->config->baseUrl,
@@ -463,6 +475,15 @@ final class TalariaClient
         )) {
             return;
         }
+        if ($this->capturedThrowables->contains($exception)) {
+            return;
+        }
+        if (
+            UncaughtExceptionDump::isEngineFatal($exception->getMessage())
+            && ($this->capturedThrowables->count() > 0 || $this->engineFatalReported)
+        ) {
+            return;
+        }
 
         $this->tracer->markError($exception->getMessage());
 
@@ -480,7 +501,7 @@ final class TalariaClient
 
         $defaultTitle = ExceptionPayloadBuilder::shortName($exception);
 
-        $this->enqueueBuilt(
+        $enqueued = $this->enqueueBuilt(
             message: $exception->getMessage() !== '' ? $exception->getMessage() : $exception::class,
             level: SeverityLevel::Error,
             title: is_string($context['title'] ?? null) ? $context['title'] : $defaultTitle,
@@ -495,6 +516,39 @@ final class TalariaClient
             platform: 'php',
             originalContext: $context,
         );
+        if ($enqueued) {
+            $this->capturedThrowables->attach($exception);
+        }
+    }
+
+    /**
+     * Fatal from the shutdown handler. Skips PHP's "Uncaught … thrown" echo
+     * when this request already captured the throwable (or that dump).
+     */
+    public function captureUnhandledError(string $message, int $severity, string $file, int $line): void
+    {
+        $engineFatal = UncaughtExceptionDump::isEngineFatal($message);
+        if ($engineFatal && ($this->hasCapturedException() || $this->engineFatalReported)) {
+            return;
+        }
+
+        $capturedBefore = $this->capturedThrowables->count();
+        $this->captureException(new \ErrorException($message, 0, $severity, $file, $line), [
+            'mechanism' => [
+                'type' => 'generic',
+                'handled' => false,
+                'synthetic' => false,
+            ],
+        ]);
+
+        if ($engineFatal && $this->capturedThrowables->count() > $capturedBefore) {
+            $this->engineFatalReported = true;
+        }
+    }
+
+    public function hasCapturedException(): bool
+    {
+        return $this->capturedThrowables->count() > 0;
     }
 
     /**
@@ -528,6 +582,12 @@ final class TalariaClient
         )) {
             return;
         }
+        if (
+            UncaughtExceptionDump::isEngineFatal($message)
+            && ($this->hasCapturedException() || $this->engineFatalReported)
+        ) {
+            return;
+        }
         if ($severity->atLeast(SeverityLevel::Error)) {
             $this->tracer->markError($message);
         }
@@ -540,7 +600,7 @@ final class TalariaClient
             is_array($context['extra'] ?? null) ? $context['extra'] : [],
         );
 
-        $this->enqueueBuilt(
+        $enqueued = $this->enqueueBuilt(
             message: $message,
             level: $severity,
             title: is_string($context['title'] ?? null) ? $context['title'] : null,
@@ -554,6 +614,9 @@ final class TalariaClient
             platform: 'php',
             originalContext: $context,
         );
+        if ($enqueued && UncaughtExceptionDump::isEngineFatal($message)) {
+            $this->engineFatalReported = true;
+        }
     }
 
     /**
@@ -680,6 +743,8 @@ final class TalariaClient
     public function resetRequestState(): void
     {
         $this->breadcrumbs->clear();
+        $this->capturedThrowables = new \SplObjectStorage();
+        $this->engineFatalReported = false;
         $this->processors = [];
         $this->globalTags = $this->config->tags;
         $this->globalExtra = [];
@@ -805,9 +870,9 @@ final class TalariaClient
         ?array $exception = null,
         ?string $platform = null,
         ?array $originalContext = null,
-    ): void {
+    ): bool {
         if ($this->eventsDisabled) {
-            return;
+            return false;
         }
         $runtime = RuntimeContext::collect();
 
@@ -876,13 +941,13 @@ final class TalariaClient
             } catch (\Throwable $e) {
                 error_log('[Talaria] beforeSend failed: ' . $e->getMessage());
 
-                return;
+                return false;
             }
             if ($result === null) {
-                return;
+                return false;
             }
             if (!is_array($result)) {
-                return;
+                return false;
             }
             $message = is_string($result['message'] ?? null) ? $result['message'] : $message;
             if (isset($result['level'])) {
@@ -973,5 +1038,7 @@ final class TalariaClient
             'message' => $message,
             'level' => $level->value,
         ]);
+
+        return true;
     }
 }

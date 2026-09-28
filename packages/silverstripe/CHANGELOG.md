@@ -5,6 +5,16 @@ All notable changes to `talaria/silverstripe` are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.2] - 2026-09-29
+
+### Fixed
+
+- Uncaught exceptions logged by Monolog are captured once, with structured frames. The shutdown handler no longer sends a second event whose stack trace is the message.
+
+### Changed
+
+- Requires `talaria/talaria` ^1.2.2.
+
 ## [1.2.1] - 2026-09-27
 
 ### Changed

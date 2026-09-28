@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.2.2 - 2026-09-29
+
+- Report each uncaught exception once. A second capture of the same throwable is dropped, and PHP's "Uncaught … thrown" shutdown fatal is not sent again as a separate event.
+
 ## 1.2.1 - 2026-09-27
 
 - Package docs point at the marketing guides.

@@ -6,6 +6,7 @@ namespace Talaria;
 
 use Psr\Log\AbstractLogger;
 use Psr\Log\LogLevel;
+use Talaria\Integration\UncaughtExceptionDump;
 
 /**
  * PSR-3 logger + scoped Talaria capture facade (queued, not sent immediately).
@@ -66,12 +67,25 @@ final class Logger extends AbstractLogger
 
         $exception = $context['exception'] ?? null;
         if ($exception instanceof \Throwable) {
-            $this->client->captureExceptionFromLogger($exception, [
+            $capture = [
                 'extra' => $merged['extra'],
                 'title' => $merged['title'],
                 'tags' => $merged['tags'],
                 'userId' => $merged['userId'],
-            ]);
+            ];
+            if (isset($merged['mechanism']) && is_array($merged['mechanism'])) {
+                $capture['mechanism'] = $merged['mechanism'];
+            } elseif (
+                UncaughtExceptionDump::logMarksUnhandled($interpolated)
+                || UncaughtExceptionDump::logMarksUnhandled((string) $message)
+            ) {
+                $capture['mechanism'] = [
+                    'type' => 'generic',
+                    'handled' => false,
+                    'synthetic' => false,
+                ];
+            }
+            $this->client->captureExceptionFromLogger($exception, $capture);
 
             return;
         }

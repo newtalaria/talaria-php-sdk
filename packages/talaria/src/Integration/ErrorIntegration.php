@@ -103,15 +103,11 @@ final class ErrorIntegration
             $fatalTypes = [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR];
             if (in_array($error['type'], $fatalTypes, true)) {
                 try {
-                    $this->client->captureException(
-                        new \ErrorException(
-                            $error['message'],
-                            0,
-                            $error['type'],
-                            $error['file'],
-                            $error['line'],
-                        ),
-                        self::unhandledMechanism(),
+                    $this->client->captureUnhandledError(
+                        $error['message'],
+                        $error['type'],
+                        $error['file'],
+                        $error['line'],
                     );
                 } catch (\Throwable) {
                     // ignore

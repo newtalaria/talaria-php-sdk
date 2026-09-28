@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Talaria\SilverStripe;
 
+use Talaria\Integration\UncaughtExceptionDump;
 use Talaria\SeverityLevel;
 use Talaria\TalariaClient;
 
@@ -24,12 +25,20 @@ trait LogHandlerSupport
     ): void {
         $exception = $context['exception'] ?? null;
         if ($exception instanceof \Throwable) {
-            $client->captureException($exception, [
+            $capture = [
                 'extra' => $this->contextWithoutException($context),
                 'tags' => $this->stringTags($context['tags'] ?? null),
                 'userId' => $this->resolveUserId($context),
                 'title' => $exception::class,
-            ]);
+            ];
+            if (UncaughtExceptionDump::logMarksUnhandled($message)) {
+                $capture['mechanism'] = [
+                    'type' => 'generic',
+                    'handled' => false,
+                    'synthetic' => false,
+                ];
+            }
+            $client->captureException($exception, $capture);
 
             return;
         }
