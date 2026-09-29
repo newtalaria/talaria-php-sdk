@@ -7,13 +7,10 @@ namespace Talaria\SilverStripe;
 use SilverStripe\Core\Injector\Injector;
 use SilverStripe\ORM\Connect\MySQLDatabase;
 use Talaria\TalariaClient;
-use Talaria\Tracing\SpanKind;
-use Talaria\Tracing\SpanStatus;
-use Talaria\Tracing\SqlSanitizer;
 
 /**
- * CLIENT/db spans around Silverstripe MySQL queries. Identical statements are
- * each recorded (N+1 stays visible). No-ops when tracing is off.
+ * CLIENT/db spans around Silverstripe MySQL queries. Identical statements under
+ * one parent roll into one span with a repeat count. No-ops when tracing is off.
  */
 class TracingMySQLDatabase extends MySQLDatabase
 {
@@ -60,31 +57,7 @@ class TracingMySQLDatabase extends MySQLDatabase
             return $callback();
         }
 
-        $attrs = SqlSanitizer::attributes($sql, 'mysql');
-        $span = $client->startSpan(SqlSanitizer::spanName($sql), SpanKind::Client, $attrs);
-        $client->addBreadcrumb([
-            'type' => 'query',
-            'category' => 'db',
-            'message' => $attrs['db.query.text'],
-            'level' => 'info',
-            'data' => [
-                'db.system.name' => 'mysql',
-                'db.operation.name' => $attrs['db.operation.name'],
-            ],
-        ]);
-
-        try {
-            $result = $callback();
-            $span->setStatus(SpanStatus::Ok);
-
-            return $result;
-        } catch (\Throwable $e) {
-            $span->setStatus(SpanStatus::Error, $e->getMessage());
-            $client->getTracer()->markError($e->getMessage());
-            throw $e;
-        } finally {
-            $span->end();
-        }
+        return $client->recordQuery($sql, 'mysql', $callback);
     }
 
     private static function client(): ?TalariaClient

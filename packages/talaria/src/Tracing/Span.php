@@ -37,7 +37,7 @@ final class Span
         public readonly ?string $parentSpanId,
         public readonly string $name,
         public readonly string $kind,
-        public readonly string $startTime,
+        public string $startTime,
         array $attributes = [],
         array $resource = [],
         bool $recording = true,
@@ -117,13 +117,73 @@ final class Span
         return $this->status;
     }
 
+    public function getAttribute(string $key): ?string
+    {
+        return $this->attributes[$key] ?? null;
+    }
+
+    /**
+     * Wall time of this span in milliseconds, after it has ended.
+     */
+    public function durationMs(): float
+    {
+        $start = self::unixMs($this->startTime);
+        $end = self::unixMs($this->endTime ?? $this->startTime);
+        if ($start === null || $end === null) {
+            return 0.0;
+        }
+
+        return (float) max(0, $end - $start);
+    }
+
+    /**
+     * Place the span on a real execution. Used before end, and when a later
+     * repeat of the same SQL is slower than the one this span already shows.
+     */
+    public function reviseWindow(string $startTime, string $endTime): void
+    {
+        if (!$this->recording) {
+            return;
+        }
+        $this->startTime = $startTime;
+        $this->endTime = $endTime;
+    }
+
+    /**
+     * Fold another successful execution of the same SQL into this span.
+     * The bar stays the slower run. Count and summed SQL time live on attributes.
+     */
+    public function absorbExecution(self $execution): void
+    {
+        if (!$this->recording) {
+            return;
+        }
+        $count = (int) ($this->attributes['db.query.count'] ?? '1');
+        if ($count < 1) {
+            $count = 1;
+        }
+        $own = $this->durationMs();
+        $sum = isset($this->attributes['db.query.duration_sum_ms'])
+            ? (float) $this->attributes['db.query.duration_sum_ms']
+            : $own;
+        $extra = $execution->durationMs();
+        $this->attributes['db.query.count'] = (string) ($count + 1);
+        $this->attributes['db.query.duration_sum_ms'] = self::formatMs($sum + $extra);
+        if ($extra > $own) {
+            $this->startTime = $execution->startTime;
+            if ($execution->endTime !== null) {
+                $this->endTime = $execution->endTime;
+            }
+        }
+    }
+
     public function end(?string $endTime = null): void
     {
         if ($this->ended) {
             return;
         }
         $this->ended = true;
-        $this->endTime = $endTime ?? RuntimeContext::isoTimestamp();
+        $this->endTime = $endTime ?? $this->endTime ?? RuntimeContext::isoTimestamp();
 
         if ($this->onEnd !== null && $this->recording) {
             $callback = $this->onEnd;
@@ -193,5 +253,31 @@ final class Span
         }
 
         return $wire;
+    }
+
+    private static function unixMs(string $iso): ?int
+    {
+        $parsed = \DateTimeImmutable::createFromFormat(
+            'Y-m-d\TH:i:s.v\Z',
+            $iso,
+            new \DateTimeZone('UTC'),
+        );
+        if ($parsed === false) {
+            return null;
+        }
+
+        return ((int) $parsed->format('U')) * 1000 + (int) $parsed->format('v');
+    }
+
+    private static function formatMs(float $ms): string
+    {
+        $rounded = round($ms, 3);
+        if (abs($rounded - round($rounded)) < 0.0005) {
+            return (string) (int) round($rounded);
+        }
+
+        $text = number_format($rounded, 3, '.', '');
+
+        return rtrim(rtrim($text, '0'), '.');
     }
 }

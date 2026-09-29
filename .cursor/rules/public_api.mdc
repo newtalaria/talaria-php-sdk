@@ -19,6 +19,8 @@ Talaria::captureMessage($message, $level, $context);
 Talaria::addBreadcrumb([...]);
 Talaria::startTransaction($name, $kind?, $attributes?);
 Talaria::startSpan($name, $kind?, $attributes?);
+Talaria::setRecordQuerySpans($record);
+Talaria::withoutQuerySpans($callback);
 Talaria::getTraceparent();
 Talaria::analytics();
 Talaria::resetRequestState();

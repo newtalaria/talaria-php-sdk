@@ -18,6 +18,8 @@ use Talaria\Tracing\BreadcrumbBuffer;
 use Talaria\Tracing\NullSpanTransport;
 use Talaria\Tracing\Span;
 use Talaria\Tracing\SpanKind;
+use Talaria\Tracing\SpanStatus;
+use Talaria\Tracing\SqlSanitizer;
 use Talaria\Tracing\SpanQueue;
 use Talaria\Tracing\SpanTransport;
 use Talaria\Tracing\SpanTransportInterface;
@@ -659,6 +661,118 @@ final class TalariaClient
         array $attributes = [],
     ): Span {
         return $this->tracer->startSpan($name, $kind, $attributes);
+    }
+
+    public function recordsQuerySpans(): bool
+    {
+        return $this->tracer->recordsQuerySpans();
+    }
+
+    /**
+     * Turn automatic SQL spans off until the transaction ends or this is set true.
+     */
+    public function setRecordQuerySpans(bool $record): void
+    {
+        $this->tracer->setRecordQuerySpans($record);
+    }
+
+    /**
+     * @template T
+     * @param callable(): T $fn
+     * @return T
+     */
+    public function withoutQuerySpans(callable $fn): mixed
+    {
+        return $this->tracer->withoutQuerySpans($fn);
+    }
+
+    /**
+     * Time $run and record one CLIENT span, rolling it into an identical query
+     * already recorded under the current parent.
+     *
+     * @template T
+     * @param callable(): T $run
+     * @return T
+     */
+    public function recordQuery(string $sql, string $system, callable $run): mixed
+    {
+        if (!$this->tracer->isEnabled() || !$this->tracer->recordsQuerySpans()) {
+            try {
+                return $run();
+            } catch (\Throwable $e) {
+                $this->addQueryBreadcrumb($system, SqlSanitizer::operation($sql));
+                throw $e;
+            }
+        }
+
+        $span = $this->startSpan(
+            SqlSanitizer::spanName($sql),
+            SpanKind::Client,
+            SqlSanitizer::attributes($sql, $system),
+        );
+        try {
+            $result = $run();
+            $span->setStatus(SpanStatus::Ok);
+            $this->addQueryBreadcrumb($system, SqlSanitizer::operation($sql));
+
+            return $result;
+        } catch (\Throwable $e) {
+            $span->setStatus(SpanStatus::Error, $e->getMessage());
+            $this->tracer->markError($e->getMessage());
+            $this->addQueryBreadcrumb($system, SqlSanitizer::operation($sql));
+            throw $e;
+        } finally {
+            $span->end();
+        }
+    }
+
+    /**
+     * Record a query that has already finished (Laravel QueryExecuted).
+     *
+     * @param array<string, string> $attributes
+     */
+    public function recordFinishedQuery(
+        string $sql,
+        string $system,
+        float $durationMs,
+        bool $failed = false,
+        ?string $error = null,
+        array $attributes = [],
+    ): void {
+        $this->addQueryBreadcrumb($system, SqlSanitizer::operation($sql));
+        if (!$this->tracer->isEnabled() || !$this->tracer->recordsQuerySpans()) {
+            return;
+        }
+
+        $endMs = (int) floor(microtime(true) * 1000);
+        $startMs = $endMs - (int) round(max(0, $durationMs));
+        $span = $this->startSpan(
+            SqlSanitizer::spanName($sql),
+            SpanKind::Client,
+            array_merge(SqlSanitizer::attributes($sql, $system), $attributes),
+        );
+        $span->reviseWindow(
+            RuntimeContext::isoFromUnixMs($startMs),
+            RuntimeContext::isoFromUnixMs($endMs),
+        );
+        if ($failed) {
+            $span->setStatus(SpanStatus::Error, $error);
+            $this->tracer->markError($error);
+        } else {
+            $span->setStatus(SpanStatus::Ok);
+        }
+        $span->end(RuntimeContext::isoFromUnixMs($endMs));
+    }
+
+    private function addQueryBreadcrumb(string $system, string $operation): void
+    {
+        $this->addBreadcrumb([
+            'type' => 'query',
+            'category' => 'db',
+            'message' => $operation,
+            'level' => 'info',
+            'data' => ['db.system.name' => $system],
+        ]);
     }
 
     public function getTracer(): Tracer

@@ -88,4 +88,17 @@ final class RuntimeContext
     {
         return (new \DateTimeImmutable('now', new \DateTimeZone('UTC')))->format('Y-m-d\TH:i:s.v\Z');
     }
+
+    public static function isoFromUnixMs(int $unixMs): string
+    {
+        $seconds = intdiv($unixMs, 1000);
+        $millis = $unixMs % 1000;
+        if ($millis < 0) {
+            $seconds -= 1;
+            $millis += 1000;
+        }
+        $dt = (new \DateTimeImmutable('@' . $seconds))->setTimezone(new \DateTimeZone('UTC'));
+
+        return $dt->format('Y-m-d\TH:i:s') . sprintf('.%03dZ', $millis);
+    }
 }

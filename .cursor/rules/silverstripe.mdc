@@ -39,7 +39,7 @@ Depends on core `Talaria\TalariaClient` (PHP) and the published npm package [`@n
 - Inject via `RequirementsHelper` + `LeftAndMainExtension` / `FrontendExtension`
 - Config JSON is `window.__TALARIA_CONFIG__`; module script calls `Talaria.init` and assigns `window.Talaria`
 - Optional `browserDsn` / `TALARIA_BROWSER_DSN` for browser inject when PHP `dsn` is not browser-reachable (mixed content / Docker-internal hosts)
-- Same project `tal_live_` key as PHP; replay sample rates default to `0`
+- Optional `browserApiKey` / `TALARIA_BROWSER_API_KEY` for browser inject. When set, CMS and public pages use that `tal_live_` key (a different project from PHP). When unset, browser inject uses the PHP key. A non-empty value that is not a `tal_live_` key disables browser inject. Replay sample rates default to `0`
 - Init tags: `platform=web`, `runtime=silverstripe-cms|silverstripe-frontend`, `runtime_version`, `ss_env`, `host`, optional `service` / `browserTags`, CMS `ss.section`
 - Init `userId` from current Member when logged in
 - CMS sets `inlineStylesheet: true` automatically; frontend defaults false; YAML `browserInlineStylesheet` overrides both

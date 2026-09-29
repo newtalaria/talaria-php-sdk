@@ -22,6 +22,9 @@ Talaria\SilverStripe\Config:
   # Optional: browser inject only (falls back to dsn). Use when PHP DSN is not
   # reachable from the browser (e.g. http://host.docker.internal behind HTTPS).
   browserDsn: '`TALARIA_BROWSER_DSN`'
+  # Optional: browser inject only. When set, CMS and public pages use this
+  # project key. PHP keeps apiKey. Leave unset to share the PHP key.
+  browserApiKey: '`TALARIA_BROWSER_API_KEY`'
   apiKey: '`TALARIA_API_KEY`'
   environment: '`TALARIA_ENVIRONMENT`'
   release: '`TALARIA_RELEASE`'

@@ -20,9 +20,9 @@ final class BreadcrumbTest extends TestCase
         }
 
         $snapshot = $buffer->snapshot();
-        self::assertCount(50, $snapshot);
-        self::assertSame('crumb-10', $snapshot[0]['message']);
-        self::assertSame('crumb-59', $snapshot[49]['message']);
+        self::assertCount(BreadcrumbBuffer::MAX_OTHER, $snapshot);
+        self::assertSame('crumb-25', $snapshot[0]['message']);
+        self::assertSame('crumb-59', $snapshot[34]['message']);
         self::assertSame('BreadcrumbDto', $snapshot[0]['__className__']);
     }
 
@@ -63,16 +63,16 @@ final class BreadcrumbTest extends TestCase
 
         $event = $transport->allEvents()[0];
         self::assertNotNull($event->breadcrumbs);
-        self::assertCount(50, $event->breadcrumbs);
-        self::assertSame('crumb-10', $event->breadcrumbs[0]['message']);
-        self::assertSame('crumb-59', $event->breadcrumbs[49]['message']);
+        self::assertCount(BreadcrumbBuffer::MAX_QUERY, $event->breadcrumbs);
+        self::assertSame('crumb-45', $event->breadcrumbs[0]['message']);
+        self::assertSame('crumb-59', $event->breadcrumbs[14]['message']);
         self::assertSame($root->traceId, $event->traceId);
         self::assertSame($root->spanId, $event->spanId);
 
         $wire = $event->toWire();
         self::assertSame($root->traceId, $wire['traceId']);
         self::assertSame($root->spanId, $wire['spanId']);
-        self::assertCount(50, $wire['breadcrumbs']);
+        self::assertCount(BreadcrumbBuffer::MAX_QUERY, $wire['breadcrumbs']);
         self::assertSame('BreadcrumbDto', $wire['breadcrumbs'][0]['__className__']);
     }
 
@@ -94,5 +94,19 @@ final class BreadcrumbTest extends TestCase
         $event = $transport->allEvents()[0];
         self::assertNull($event->breadcrumbs);
         self::assertArrayNotHasKey('breadcrumbs', $event->toWire());
+    }
+
+    public function testQueryCrumbsDoNotEvictApplicationCrumbs(): void
+    {
+        $buffer = new BreadcrumbBuffer();
+        $buffer->add(['message' => 'shopify.import_products', 'type' => 'default']);
+        for ($i = 0; $i < 50; $i++) {
+            $buffer->add(['message' => 'SELECT File ' . $i, 'type' => 'query']);
+        }
+
+        $messages = array_map(static fn ($item) => $item['message'], $buffer->snapshot());
+        self::assertContains('shopify.import_products', $messages);
+        self::assertCount(BreadcrumbBuffer::MAX_QUERY + 1, $messages);
+        self::assertSame('SELECT File 35', $messages[1]);
     }
 }

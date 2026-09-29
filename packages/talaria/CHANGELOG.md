@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.2.3 - 2026-09-29
+
+- Identical SQL under one parent is one span with `db.query.count` and `db.query.duration_sum_ms`. The span stays the slowest execution. Queries of 200ms or more, and failed queries, stay their own spans.
+- A transaction stores at most 200 spans and keeps 32 slots for non-SQL spans. The root records `dropped_span_count` when a span is dropped.
+- `withoutQuerySpans` and `setRecordQuerySpans(false)` turn automatic SQL spans off for one run.
+- Query breadcrumbs use at most 15 of the 50 breadcrumb slots, so application breadcrumbs stay when a job runs thousands of queries.
+
 ## 1.2.2 - 2026-09-29
 
 - Report each uncaught exception once. A second capture of the same throwable is dropped, and PHP's "Uncaught … thrown" shutdown fatal is not sent again as a separate event.

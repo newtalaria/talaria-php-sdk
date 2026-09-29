@@ -20,6 +20,8 @@ The DSN defaults to `https://ingest.newtalaria.com`. Set the API key, then flush
 ```bash
 TALARIA_API_KEY="tal_live_…"
 TALARIA_ENVIRONMENT="production"
+# Optional. CMS and public pages use this project. PHP keeps TALARIA_API_KEY.
+# TALARIA_BROWSER_API_KEY="tal_live_…"
 ```
 
 ```bash

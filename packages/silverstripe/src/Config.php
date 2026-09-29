@@ -16,6 +16,7 @@ use Talaria\Environment;
  * - TALARIA_ENVIRONMENT
  * - TALARIA_DSN (optional; defaults to https://ingest.newtalaria.com)
  * - TALARIA_BROWSER_DSN (optional; browser inject only — use when PHP DSN is not browser-reachable, e.g. http://host.docker.internal behind an HTTPS site)
+ * - TALARIA_BROWSER_API_KEY (optional; browser inject only — CMS and public pages use this project; PHP keeps TALARIA_API_KEY)
  * - TALARIA_RELEASE (optional)
  * - TALARIA_COMMIT_SHA (optional)
  */
@@ -115,7 +116,7 @@ class Config
     {
         $options = self::toClientOptions();
         $dsn = self::resolveBrowserDsn($options);
-        $apiKey = is_string($options['apiKey'] ?? null) ? $options['apiKey'] : '';
+        $apiKey = self::resolveBrowserApiKey($options);
 
         if ($dsn === '' || $apiKey === '' || !str_starts_with($apiKey, 'tal_live_')) {
             return null;
@@ -207,6 +208,28 @@ class Config
         $dsn = is_string($clientOptions['dsn'] ?? null) ? $clientOptions['dsn'] : '';
 
         return $dsn !== '' ? rtrim($dsn, '/') : '';
+    }
+
+    /**
+     * Browser API key: YAML/env `browserApiKey` / TALARIA_BROWSER_API_KEY, else the PHP key.
+     *
+     * A non-empty value sends CMS and public-page browser traffic to that project.
+     * An empty value keeps the PHP project key. A value that is not a `tal_live_` key
+     * disables browser inject.
+     *
+     * @param array<string, mixed> $clientOptions
+     */
+    private static function resolveBrowserApiKey(array $clientOptions): string
+    {
+        $browserKey = self::resolveString(static::config()->get('browserApiKey') ?? '');
+        if ($browserKey === '') {
+            $browserKey = self::env('TALARIA_BROWSER_API_KEY');
+        }
+        if ($browserKey !== '') {
+            return $browserKey;
+        }
+
+        return is_string($clientOptions['apiKey'] ?? null) ? $clientOptions['apiKey'] : '';
     }
 
     /**

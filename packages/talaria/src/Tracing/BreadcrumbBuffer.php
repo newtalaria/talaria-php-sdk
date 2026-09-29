@@ -23,6 +23,12 @@ final class BreadcrumbBuffer
 {
     public const DEFAULT_CAPACITY = 50;
 
+    /** Query crumbs cannot grow past this, and cannot evict other crumbs. */
+    public const MAX_QUERY = 15;
+
+    /** Non-query crumbs. Together with {@see MAX_QUERY} this fills the buffer. */
+    public const MAX_OTHER = 35;
+
     /** @var list<Breadcrumb> */
     private array $items = [];
 
@@ -67,11 +73,57 @@ final class BreadcrumbBuffer
             $item['data'] = $data;
         }
 
-        $this->items[] = $item;
-        $overflow = count($this->items) - $this->capacity;
-        if ($overflow > 0) {
-            $this->items = array_slice($this->items, $overflow);
+        if (($item['type'] ?? '') === 'query') {
+            $this->trim('query', $this->queryCap() - 1);
+        } else {
+            $this->trim(null, $this->otherCap() - 1);
         }
+        $this->items[] = $item;
+    }
+
+    private function queryCap(): int
+    {
+        if ($this->capacity >= self::DEFAULT_CAPACITY) {
+            return self::MAX_QUERY;
+        }
+
+        return min(self::MAX_QUERY, $this->capacity);
+    }
+
+    private function otherCap(): int
+    {
+        return max(0, min(self::MAX_OTHER, $this->capacity - $this->queryCap()));
+    }
+
+    /**
+     * Drop the oldest crumbs of $type (or every non-query crumb when $type is null)
+     * until at most $max remain.
+     */
+    private function trim(?string $type, int $max): void
+    {
+        if ($max < 0) {
+            $max = 0;
+        }
+        $matched = [];
+        foreach ($this->items as $index => $existing) {
+            $isQuery = ($existing['type'] ?? '') === 'query';
+            $hit = $type === null ? !$isQuery : $isQuery;
+            if ($hit) {
+                $matched[] = $index;
+            }
+        }
+        $overflow = count($matched) - $max;
+        if ($overflow <= 0) {
+            return;
+        }
+        $drop = array_flip(array_slice($matched, 0, $overflow));
+        $kept = [];
+        foreach ($this->items as $index => $existing) {
+            if (!isset($drop[$index])) {
+                $kept[] = $existing;
+            }
+        }
+        $this->items = $kept;
     }
 
     /**

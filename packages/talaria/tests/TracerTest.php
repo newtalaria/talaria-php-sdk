@@ -5,13 +5,15 @@ declare(strict_types=1);
 namespace Talaria\Tests;
 
 use PHPUnit\Framework\TestCase;
+use Talaria\Context\RuntimeContext;
 use Talaria\TalariaClient;
 use Talaria\Tracing\SpanKind;
 use Talaria\Tracing\SpanStatus;
+use Talaria\Tracing\Tracer;
 
 final class TracerTest extends TestCase
 {
-    public function testIdenticalQuerySpansAreAllSent(): void
+    public function testIdenticalQuerySpansRollUpUnderTheParent(): void
     {
         $spans = new FakeSpanTransport();
         $client = $this->client($spans);
@@ -32,21 +34,142 @@ final class TracerTest extends TestCase
         $client->flush();
 
         $all = $spans->allSpans();
-        self::assertCount(13, $all);
-        self::assertSame(1, $spans->batchCount());
-        self::assertCount(13, $spans->batches[0]);
+        self::assertCount(2, $all);
         self::assertSame('GET /products', $all[0]->name);
-        $queries = array_slice($all, 1);
-        self::assertCount(12, $queries);
-        foreach ($queries as $query) {
-            self::assertSame('SELECT', $query->name);
-            $wire = $query->toWire();
-            self::assertSame('mysql', $wire['attributes']['db.system.name']);
-            self::assertSame('SELECT', $wire['attributes']['db.operation.name']);
-            self::assertSame($sql, $wire['attributes']['db.query.text']);
-            self::assertSame($all[0]->traceId, $query->traceId);
-            self::assertSame($all[0]->spanId, $query->toWire()['parentSpanId']);
+        $query = $all[1];
+        $wire = $query->toWire();
+        self::assertSame('SELECT', $query->name);
+        self::assertSame('mysql', $wire['attributes']['db.system.name']);
+        self::assertSame($sql, $wire['attributes']['db.query.text']);
+        self::assertSame('12', $wire['attributes']['db.query.count']);
+        self::assertSame($all[0]->spanId, $wire['parentSpanId']);
+        self::assertArrayNotHasKey('dropped_span_count', $all[0]->toWire()['attributes'] ?? []);
+    }
+
+    public function testInterleavedQueriesKeepLaterPhaseSpans(): void
+    {
+        $spans = new FakeSpanTransport();
+        $client = $this->client($spans);
+        $root = $client->startTransaction('GET /dev/tasks/SyncShopifyDataTask', SpanKind::Server);
+        $import = $client->startSpan('shopify.import_products', SpanKind::Internal);
+        foreach (['SELECT File', 'SELECT SiteTree', 'SELECT Shopify_ProductVariant'] as $name) {
+            for ($i = 0; $i < 12; $i++) {
+                $query = $client->startSpan($name, SpanKind::Client, [
+                    'db.system.name' => 'mysql',
+                    'db.query.text' => $name,
+                ]);
+                $query->setStatus(SpanStatus::Ok);
+                $query->end();
+            }
         }
+        $import->end();
+        $collections = $client->startSpan('shopify.import_collections', SpanKind::Internal);
+        $collections->end();
+        $collects = $client->startSpan('shopify.import_collects', SpanKind::Internal);
+        $collects->end();
+        $root->end();
+        $client->flush();
+
+        $names = array_map(static fn ($span) => $span->name, $spans->allSpans());
+        self::assertContains('shopify.import_products', $names);
+        self::assertContains('shopify.import_collections', $names);
+        self::assertContains('shopify.import_collects', $names);
+        $queries = array_values(array_filter(
+            $spans->allSpans(),
+            static fn ($span) => str_starts_with($span->name, 'SELECT'),
+        ));
+        self::assertCount(3, $queries);
+        foreach ($queries as $query) {
+            self::assertSame('12', $query->toWire()['attributes']['db.query.count']);
+        }
+        self::assertArrayNotHasKey('dropped_span_count', $spans->allSpans()[0]->toWire()['attributes'] ?? []);
+    }
+
+    public function testSlowAndFailedQueriesStayTheirOwnSpans(): void
+    {
+        $spans = new FakeSpanTransport();
+        $client = $this->client($spans);
+        $root = $client->startTransaction('GET /products', SpanKind::Server);
+        $sql = 'SELECT File';
+
+        $fast = $client->startSpan('SELECT File', SpanKind::Client, ['db.query.text' => $sql]);
+        $fast->setStatus(SpanStatus::Ok);
+        $fast->end();
+
+        $endMs = (int) floor(microtime(true) * 1000);
+        $slow = $client->startSpan('SELECT File', SpanKind::Client, ['db.query.text' => $sql]);
+        $slow->reviseWindow(RuntimeContext::isoFromUnixMs($endMs - 250), RuntimeContext::isoFromUnixMs($endMs));
+        $slow->setStatus(SpanStatus::Ok);
+        $slow->end(RuntimeContext::isoFromUnixMs($endMs));
+
+        $failed = $client->startSpan('SELECT File', SpanKind::Client, ['db.query.text' => $sql]);
+        $failed->setStatus(SpanStatus::Error, 'deadlock');
+        $failed->end();
+
+        $again = $client->startSpan('SELECT File', SpanKind::Client, ['db.query.text' => $sql]);
+        $again->setStatus(SpanStatus::Ok);
+        $again->end();
+
+        $root->end();
+        $client->flush();
+
+        $queries = array_values(array_filter(
+            $spans->allSpans(),
+            static fn ($span) => $span->name === 'SELECT File',
+        ));
+        self::assertCount(3, $queries);
+        self::assertSame('2', $queries[0]->toWire()['attributes']['db.query.count']);
+        self::assertGreaterThanOrEqual(200.0, $queries[1]->durationMs());
+        self::assertSame(SpanStatus::Error->value, $queries[2]->getStatus());
+    }
+
+    public function testSqlBudgetLeavesRoomForALaterPhaseSpan(): void
+    {
+        $spans = new FakeSpanTransport();
+        $client = $this->client($spans);
+        $root = $client->startTransaction('GET /sync', SpanKind::Server);
+        for ($i = 0; $i < Tracer::MAX_SQL_SPANS + 1; $i++) {
+            $query = $client->startSpan('SELECT t' . $i, SpanKind::Client, [
+                'db.query.text' => 'SELECT t' . $i,
+            ]);
+            $query->setStatus(SpanStatus::Ok);
+            $query->end();
+        }
+        $phase = $client->startSpan('shopify.import_collections', SpanKind::Internal);
+        $phase->end();
+        $root->end();
+        $client->flush();
+
+        $names = array_map(static fn ($span) => $span->name, $spans->allSpans());
+        self::assertContains('shopify.import_collections', $names);
+        self::assertNotContains('SELECT t' . Tracer::MAX_SQL_SPANS, $names);
+        $rootWire = $spans->allSpans()[0]->toWire();
+        self::assertSame('1', $rootWire['attributes']['dropped_span_count']);
+    }
+
+    public function testWithoutQuerySpansRestoresTheFlagWhenTheCallbackThrows(): void
+    {
+        $spans = new FakeSpanTransport();
+        $client = $this->client($spans);
+        $root = $client->startTransaction('task', SpanKind::Server);
+        try {
+            $client->withoutQuerySpans(static function () use ($client): void {
+                $client->recordQuery('SELECT File', 'mysql', static function (): void {
+                    throw new \RuntimeException('sync failed');
+                });
+            });
+            self::fail('expected the callback to throw');
+        } catch (\RuntimeException $e) {
+            self::assertSame('sync failed', $e->getMessage());
+        }
+        self::assertTrue($client->recordsQuerySpans());
+        $phase = $client->startSpan('shopify.import_collections', SpanKind::Internal);
+        $phase->end();
+        $root->end();
+        $client->flush();
+
+        $names = array_map(static fn ($span) => $span->name, $spans->allSpans());
+        self::assertSame(['task', 'shopify.import_collections'], $names);
     }
 
     public function testContinuesIncomingTraceparent(): void

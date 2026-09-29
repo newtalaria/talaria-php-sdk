@@ -202,6 +202,21 @@ final class Talaria
         return self::requireClient()->startSpan($name, $kind, $attributes);
     }
 
+    public static function setRecordQuerySpans(bool $record): void
+    {
+        self::requireClient()->setRecordQuerySpans($record);
+    }
+
+    /**
+     * @template T
+     * @param callable(): T $fn
+     * @return T
+     */
+    public static function withoutQuerySpans(callable $fn): mixed
+    {
+        return self::requireClient()->withoutQuerySpans($fn);
+    }
+
     public static function getTraceparent(): ?string
     {
         return self::requireClient()->getTraceparent();

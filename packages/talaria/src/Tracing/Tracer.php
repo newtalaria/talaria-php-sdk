@@ -16,7 +16,17 @@ use Talaria\Identity;
  */
 final class Tracer
 {
-    public const MAX_CHILD_SPANS = 200;
+    /** Spans stored for one transaction, including the root. The server rejects more. */
+    public const MAX_SPANS = 200;
+
+    /** Automatic SQL spans. The rest of the budget stays available for other spans. */
+    public const MAX_SQL_SPANS = 168;
+
+    /** Non-SQL spans, including the root, that SQL cannot consume. */
+    public const RESERVED_NON_SQL = 32;
+
+    /** Queries at or above this stay their own span. Matches the product slow-query default. */
+    public const SLOW_QUERY_MS = 200;
 
     private ?Span $root = null;
 
@@ -34,6 +44,27 @@ final class Tracer
     private bool $forceSend = false;
 
     private int $childCount = 0;
+
+    private int $sqlCount = 0;
+
+    private int $droppedCount = 0;
+
+    /** When false, spans that carry db.query.text are not recorded. */
+    private bool $recordQuerySpans = true;
+
+    /**
+     * Open SQL groups keyed by parent span id and db.query.text.
+     *
+     * @var array<string, Span>
+     */
+    private array $queryGroups = [];
+
+    /**
+     * Query spans whose budget is decided when they end, so a repeat can roll up.
+     *
+     * @var array<string, true>
+     */
+    private array $pendingQueries = [];
 
     private bool $ingestDisabled = false;
 
@@ -121,6 +152,35 @@ final class Tracer
         $this->forceSend = true;
     }
 
+    public function recordsQuerySpans(): bool
+    {
+        return $this->recordQuerySpans;
+    }
+
+    /**
+     * Lasts until the transaction commits or {@see reset()} / resetRequestState().
+     */
+    public function setRecordQuerySpans(bool $record): void
+    {
+        $this->recordQuerySpans = $record;
+    }
+
+    /**
+     * @template T
+     * @param callable(): T $fn
+     * @return T
+     */
+    public function withoutQuerySpans(callable $fn): mixed
+    {
+        $previous = $this->recordQuerySpans;
+        $this->recordQuerySpans = false;
+        try {
+            return $fn();
+        } finally {
+            $this->recordQuerySpans = $previous;
+        }
+    }
+
     /**
      * Start a root SERVER span, or a child if a transaction is already open.
      *
@@ -154,15 +214,25 @@ final class Tracer
         $isRoot = $this->root === null;
         $incoming = $isRoot ? TraceContext::fromServer() : null;
 
+        $queryText = $attributes['db.query.text'] ?? null;
+        $isQuery = is_string($queryText) && $queryText !== '';
+
         if ($isRoot) {
             $traceId = $incoming?->traceId ?? TraceContext::generateTraceId();
             $parentSpanId = $incoming?->spanId;
             $this->headSampled = Sampling::head($this->config->tracesSampleRate, $incoming?->sampled);
         } else {
-            if ($this->childCount >= self::MAX_CHILD_SPANS) {
+            if ($isQuery && !$this->recordQuerySpans) {
                 return Span::noop();
             }
-            $this->childCount++;
+            if (!$isQuery && !$this->canAdmitOther()) {
+                $this->droppedCount++;
+
+                return Span::noop();
+            }
+            if (!$isQuery) {
+                $this->childCount++;
+            }
             $parent = $this->currentSpan() ?? $this->root;
             $traceId = $parent?->traceId ?? TraceContext::generateTraceId();
             $parentSpanId = $parent?->spanId;
@@ -190,6 +260,8 @@ final class Tracer
         $this->stack[] = $span;
         if ($isRoot) {
             $this->root = $span;
+        } elseif ($isQuery) {
+            $this->pendingQueries[$span->spanId] = true;
         }
 
         return $span;
@@ -204,15 +276,21 @@ final class Tracer
         $this->sawError = false;
         $this->forceSend = false;
         $this->childCount = 0;
+        $this->sqlCount = 0;
+        $this->droppedCount = 0;
+        $this->recordQuerySpans = true;
+        $this->queryGroups = [];
+        $this->pendingQueries = [];
         $this->requestAttributes = [];
     }
 
     private function onSpanEnded(Span $span): void
     {
         $this->pop($span);
-        $this->finished[] = $span;
 
         if ($this->root !== $span) {
+            $this->acceptFinished($span);
+
             return;
         }
 
@@ -220,11 +298,88 @@ final class Tracer
         foreach ($this->stack as $open) {
             if (!$open->hasEnded()) {
                 $open->forceEnd($endTime);
-                $this->finished[] = $open;
+                $this->acceptFinished($open);
             }
         }
         $this->stack = [];
+        if ($this->droppedCount > 0) {
+            $span->setAttribute('dropped_span_count', (string) $this->droppedCount);
+        }
+        $this->finished[] = $span;
         $this->commitTransaction();
+    }
+
+    private function acceptFinished(Span $span): void
+    {
+        $pending = isset($this->pendingQueries[$span->spanId]);
+        unset($this->pendingQueries[$span->spanId]);
+        if (!$pending) {
+            $this->finished[] = $span;
+
+            return;
+        }
+        if ($this->absorbQuery($span)) {
+            return;
+        }
+        if (!$this->canAdmitSql()) {
+            $this->droppedCount++;
+
+            return;
+        }
+        $this->sqlCount++;
+        $this->childCount++;
+        $text = $span->getAttribute('db.query.text') ?? '';
+        $failed = $span->getStatus() === SpanStatus::Error->value;
+        if (!$failed && $text !== '' && $span->durationMs() < self::SLOW_QUERY_MS) {
+            $this->queryGroups[($span->parentSpanId ?? '') . "\0" . $text] = $span;
+        }
+        $this->finished[] = $span;
+    }
+
+    private function absorbQuery(Span $span): bool
+    {
+        $text = $span->getAttribute('db.query.text') ?? '';
+        if ($text === '') {
+            return false;
+        }
+        if ($span->getStatus() === SpanStatus::Error->value) {
+            return false;
+        }
+        if ($span->durationMs() >= self::SLOW_QUERY_MS) {
+            return false;
+        }
+        $group = $this->queryGroups[($span->parentSpanId ?? '') . "\0" . $text] ?? null;
+        if ($group === null) {
+            return false;
+        }
+        $group->absorbExecution($span);
+
+        return true;
+    }
+
+    private function storedCount(): int
+    {
+        return $this->childCount + ($this->root !== null ? 1 : 0);
+    }
+
+    private function nonSqlStored(): int
+    {
+        return ($this->childCount - $this->sqlCount) + ($this->root !== null ? 1 : 0);
+    }
+
+    private function canAdmitSql(): bool
+    {
+        if ($this->sqlCount >= self::MAX_SQL_SPANS || $this->storedCount() >= self::MAX_SPANS) {
+            return false;
+        }
+        $reserve = max(0, self::RESERVED_NON_SQL - $this->nonSqlStored());
+
+        return ($this->storedCount() + $reserve) < self::MAX_SPANS;
+    }
+
+    private function canAdmitOther(): bool
+    {
+        return $this->storedCount() < self::MAX_SPANS;
     }
 
     private function commitTransaction(): void

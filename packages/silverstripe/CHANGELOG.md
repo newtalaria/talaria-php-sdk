@@ -5,6 +5,17 @@ All notable changes to `talaria/silverstripe` are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.3] - 2026-09-29
+
+### Added
+
+- Optional `browserApiKey` / `TALARIA_BROWSER_API_KEY`. When set, CMS admin and public pages report with that project key. PHP keeps `TALARIA_API_KEY`.
+
+### Changed
+
+- MySQL queries use the shared SQL span helper. Identical statements under one parent roll up, and `withoutQuerySpans` turns those spans off for one run.
+- Requires `talaria/talaria` ^1.2.3.
+
 ## [1.2.2] - 2026-09-29
 
 ### Fixed
