@@ -14,7 +14,7 @@ Depends on core `Talaria\TalariaClient`. Integrate via the auto-discovered servi
 - Publish `config/talaria.php`; env names match Silverstripe (`TALARIA_DSN`, `TALARIA_API_KEY`, `TALARIA_ENABLE_TRACING`, …)
 - Do not replace the app exception handler — hook `reportable`
 - HTTP SERVER spans use route name or URI template for `http.route`
-- Query spans via `QueryExecuted`; do not collapse identical SQL (N+1 stays visible)
+- Query spans via `QueryExecuted`. Identical SQL under one parent rolls into one span with `db.query.count`. Queries of 200ms or more, and failed queries, stay their own spans. N+1 uses the repeat count.
 - Queue: CONSUMER transaction per job; `flush()` + `resetRequestState()` after each job
 - Never wrap Talaria ingest HTTP with tracing
 - Octane / Horizon / Livewire are `suggest` + `class_exists` / `function_exists` — not hard requires

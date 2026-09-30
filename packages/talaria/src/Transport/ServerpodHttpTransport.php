@@ -13,7 +13,7 @@ use Talaria\Exception\TransportException;
 /**
  * Minimal Serverpod RPC client for events/ingestBatch.
  */
-final class ServerpodHttpTransport implements TransportInterface
+final class ServerpodHttpTransport implements TransportInterface, \Talaria\Flags\FlagsHttpClient
 {
     private readonly ClientInterface $http;
 

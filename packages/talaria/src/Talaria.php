@@ -227,6 +227,11 @@ final class Talaria
         return self::requireClient()->analytics;
     }
 
+    public static function flags(): \Talaria\Flags\Flags
+    {
+        return self::requireClient()->flags;
+    }
+
     public static function resetRequestState(): void
     {
         self::$client?->resetRequestState();

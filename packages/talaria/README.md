@@ -34,6 +34,17 @@ Talaria::init([
 
 Tracing, analytics, and sample rates follow Project settings. See the [PHP guide](https://www.newtalaria.com/docs/sdk/php).
 
+## Feature flags
+
+```php
+Talaria::flags()->setContext(userId: $userId);
+$on = Talaria::flags()->boolVariation('new-checkout', false);
+```
+
+Evaluations are cached for the PHP request (or until TTL on long-lived workers). Call `loadDefinitions()` with a server API key that has `flags:definitions` for local evaluation without per-request RTT.
+
+**LaunchDarkly:** dual-running Talaria flags and LaunchDarkly in the same process is fine. Prefer one source of truth per flag key (or distinct namespaces) so evaluations do not collide. Mobile clients may not refresh while backgrounded.
+
 ## License
 
 MIT

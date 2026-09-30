@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Eloquent queries use the shared SQL span helper. Identical SQL under one parent rolls up, and `withoutQuerySpans` turns those spans off for one run.
+
 ## 1.2.1 - 2026-09-27
 
 - Package docs point at the marketing guides. The published config still defaults the DSN to `https://ingest.newtalaria.com`.

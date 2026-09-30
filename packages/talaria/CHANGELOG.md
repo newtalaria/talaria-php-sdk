@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.2.4 - 2026-09-30
+
+- Feature flags: `Talaria::flags()` with `boolVariation` / `stringVariation` / `jsonVariation`, `setContext`, in-process cache, TTL refresh, and `loadDefinitions` for local evaluation.
+- Stamp `flag.*` tags on captured events. Respect `flags.enabled` from `sdk/getConfig`.
+- Can run alongside LaunchDarkly; Talaria flags join the same session/error graph.
+
 ## 1.2.3 - 2026-09-29
 
 - Identical SQL under one parent is one span with `db.query.count` and `db.query.duration_sum_ms`. The span stays the slowest execution. Queries of 200ms or more, and failed queries, stay their own spans.

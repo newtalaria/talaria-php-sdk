@@ -11,6 +11,7 @@ use Talaria\Analytics\AnalyticsTransportInterface;
 use Talaria\Analytics\NullAnalyticsTransport;
 use Talaria\Context\RuntimeContext;
 use Talaria\Exception\TransportException;
+use Talaria\Flags\Flags;
 use Talaria\Integration\ErrorIntegration;
 use Talaria\Integration\UncaughtExceptionDump;
 use Talaria\Protocol\ExceptionPayloadBuilder;
@@ -43,12 +44,14 @@ final class TalariaClient
     private readonly BreadcrumbBuffer $breadcrumbs;
     private readonly Identity $identity;
     public readonly Analytics $analytics;
+    public readonly Flags $flags;
     private bool $closed = false;
     private bool $eventsDisabled = false;
     private bool $spansDisabled = false;
     private bool $analyticsDisabled = false;
     private bool $loggedIngestDisable = false;
     private ?ErrorIntegration $errorIntegration = null;
+    private ?ServerpodHttpTransport $httpTransport = null;
 
     /**
      * Throwables already enqueued this request. Identity, not message text.
@@ -121,6 +124,9 @@ final class TalariaClient
             $this->config->apiKey,
             $this->config->httpTimeoutSeconds,
         );
+        if ($transport instanceof ServerpodHttpTransport) {
+            $this->httpTransport = $transport;
+        }
 
         if ($spanTransport === null) {
             $spanTransport = $transport instanceof NullTransport
@@ -187,6 +193,11 @@ final class TalariaClient
             $this->tracer,
             fn (): bool => $this->closed || $this->analyticsDisabled || !$this->config->enableAnalytics,
         );
+        $this->flags = new Flags(
+            $this->config,
+            $this->identity,
+            fn (): ?\Talaria\Flags\FlagsHttpClient => $this->httpTransport,
+        );
 
         if ($this->config->defaultIntegrations) {
             $this->errorIntegration = new ErrorIntegration($this);
@@ -196,6 +207,9 @@ final class TalariaClient
         $remoteConfig = !is_array($options) || ($options['remoteConfig'] ?? true) !== false;
         if ($remoteConfig && $transport instanceof ServerpodHttpTransport) {
             $this->bootstrapPolicy($transport);
+        }
+        if ($this->config->enableFlags) {
+            $this->flags->maybeRefresh();
         }
     }
 
@@ -212,10 +226,12 @@ final class TalariaClient
             $ttl = max(60, min(3600, $ttl));
             if ((time() - (int) $cached['fetchedAt']) < $ttl) {
                 $this->config->applySdkDocument($cached['document']);
+                $this->flags->setPollIntervalSeconds($ttl);
 
                 return;
             }
             $this->config->applySdkDocument($cached['document']);
+            $this->flags->setPollIntervalSeconds($ttl);
         }
         try {
             $document = $transport->postJson('sdk/getConfig', [
@@ -235,8 +251,12 @@ final class TalariaClient
             } else {
                 $stored = is_array($cached['document'] ?? null) ? $cached['document'] : null;
             }
-            if (is_array($stored) && function_exists('apcu_store')) {
-                apcu_store($key, ['fetchedAt' => time(), 'document' => $stored], 3600);
+            if (is_array($stored)) {
+                $ttl = max(60, min(3600, (int) ($stored['ttlSeconds'] ?? 300)));
+                $this->flags->setPollIntervalSeconds($ttl);
+                if (function_exists('apcu_store')) {
+                    apcu_store($key, ['fetchedAt' => time(), 'document' => $stored], 3600);
+                }
             }
         } catch (\Throwable) {
             // Errors keep flowing. The next request tries again.
@@ -868,6 +888,10 @@ final class TalariaClient
             $this->config->sessionId,
         );
         $this->tracer->reset();
+        $this->flags->resetRequestState();
+        if ($this->config->enableFlags) {
+            $this->flags->maybeRefresh();
+        }
     }
 
     public function flush(): void
@@ -1017,6 +1041,7 @@ final class TalariaClient
         $tags = array_merge(
             $bag['tags'],
             Config::normalizeTags(is_array($context['tags'] ?? null) ? $context['tags'] : []),
+            $this->flags->stampTags(),
         );
         $extra = $bag['extra'];
 

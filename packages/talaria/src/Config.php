@@ -62,6 +62,10 @@ final class Config
      * Silverstripe pass `false` until YAML / `TALARIA_ENABLE_ANALYTICS` is on.
      */
     public bool $enableAnalytics;
+    /**
+     * Feature flags (`boolVariation` / …). Set from `flags.enabled` in getConfig.
+     */
+    public bool $enableFlags;
 
     /**
      * @param array{
@@ -156,6 +160,7 @@ final class Config
         $this->enableTracing = false;
         $this->tracesSampleRate = 0.0;
         $this->enableAnalytics = false;
+        $this->enableFlags = false;
         unset($options['enableTracing'], $options['tracesSampleRate'], $options['enableAnalytics'], $options['sampleRate']);
     }
 
@@ -174,6 +179,7 @@ final class Config
             $this->enableTracing = false;
             $this->tracesSampleRate = 0.0;
             $this->enableAnalytics = false;
+            $this->enableFlags = false;
             $this->sampleRate = 0.0;
 
             return;
@@ -188,6 +194,8 @@ final class Config
             : 0.0;
         $analytics = is_array($document['analytics'] ?? null) ? $document['analytics'] : [];
         $this->enableAnalytics = ($analytics['enabled'] ?? false) === true;
+        $flags = is_array($document['flags'] ?? null) ? $document['flags'] : [];
+        $this->enableFlags = ($flags['enabled'] ?? false) === true;
     }
 
     /**
