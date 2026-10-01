@@ -26,13 +26,12 @@ use Talaria\Talaria;
 Talaria::init([
     'dsn' => 'https://ingest.newtalaria.com',
     'apiKey' => getenv('TALARIA_API_KEY'),
-    'environment' => getenv('TALARIA_ENVIRONMENT') ?: 'production',
     'release' => getenv('TALARIA_RELEASE') ?: null,
     'minLevel' => 'warning',
 ]);
 ```
 
-Tracing, analytics, and sample rates follow Project settings. See the [PHP guide](https://www.newtalaria.com/docs/sdk/php).
+The API key decides the environment. Tracing, analytics, and sample rates follow Project settings. See the [PHP guide](https://www.newtalaria.com/docs/sdk/php).
 
 ## Feature flags
 

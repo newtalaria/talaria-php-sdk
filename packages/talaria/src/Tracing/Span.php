@@ -42,7 +42,6 @@ final class Span
         array $resource = [],
         bool $recording = true,
         ?callable $onEnd = null,
-        public readonly ?string $environment = null,
         public readonly ?string $release = null,
         public readonly ?string $userId = null,
         public readonly ?string $sessionId = null,
@@ -232,9 +231,6 @@ final class Span
         }
         if ($this->resource !== []) {
             $wire['resource'] = $this->resource;
-        }
-        if ($this->environment !== null && $this->environment !== '') {
-            $wire['environment'] = $this->environment;
         }
         if ($this->release !== null && $this->release !== '') {
             $wire['release'] = $this->release;

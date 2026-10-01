@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.0.0 - 2026-10-01
+
+- Breaking: `environment` is no longer an init option and is not sent on events, spans, or analytics. The API key decides the environment.
+
 ## 1.2.4 - 2026-09-30
 
 - Feature flags: `Talaria::flags()` with `boolVariation` / `stringVariation` / `jsonVariation`, `setContext`, in-process cache, TTL refresh, and `loadDefinitions` for local evaluation.

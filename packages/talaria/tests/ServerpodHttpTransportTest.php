@@ -10,7 +10,6 @@ use GuzzleHttp\HandlerStack;
 use GuzzleHttp\Middleware;
 use GuzzleHttp\Psr7\Response;
 use PHPUnit\Framework\TestCase;
-use Talaria\Environment;
 use Talaria\Event;
 use Talaria\Exception\TransportException;
 use Talaria\SeverityLevel;
@@ -36,12 +35,10 @@ final class ServerpodHttpTransportTest extends TestCase
         $transport->sendBatch([
             new Event(
                 message: 'First',
-                environment: Environment::Production,
                 level: SeverityLevel::Warning,
             ),
             new Event(
                 message: 'Second',
-                environment: Environment::Production,
                 level: SeverityLevel::Error,
             ),
         ]);
@@ -58,6 +55,7 @@ final class ServerpodHttpTransportTest extends TestCase
         self::assertCount(2, $body['input']['events']);
         self::assertSame('IngestEventInput', $body['input']['events'][0]['__className__']);
         self::assertSame('First', $body['input']['events'][0]['message']);
+        self::assertArrayNotHasKey('environment', $body['input']['events'][0]);
         self::assertSame('Second', $body['input']['events'][1]['message']);
     }
 
@@ -70,7 +68,7 @@ final class ServerpodHttpTransportTest extends TestCase
         $this->expectException(TransportException::class);
         $this->expectExceptionMessage('429');
         $transport->sendBatch([
-            new Event(message: 'x', environment: Environment::Development, level: SeverityLevel::Info),
+            new Event(message: 'x', level: SeverityLevel::Info),
         ]);
     }
 
@@ -88,7 +86,7 @@ final class ServerpodHttpTransportTest extends TestCase
 
         try {
             $transport->sendBatch([
-                new Event(message: 'x', environment: Environment::Development, level: SeverityLevel::Info),
+                new Event(message: 'x', level: SeverityLevel::Info),
             ]);
             self::fail('expected TransportException');
         } catch (TransportException $e) {

@@ -17,7 +17,6 @@ final class FlagsTest extends TestCase
         $config = new Config([
             'dsn' => 'https://example.test',
             'apiKey' => 'tal_live_testkey',
-            'environment' => 'development',
         ]);
         $config->enableFlags = false;
         $flags = new Flags($config, new Identity(anonymousId: 'a1'), static fn () => null);
@@ -32,7 +31,6 @@ final class FlagsTest extends TestCase
         $config = new Config([
             'dsn' => 'https://example.test',
             'apiKey' => 'tal_live_testkey',
-            'environment' => 'development',
         ]);
         $config->enableFlags = true;
 
@@ -85,7 +83,6 @@ final class FlagsTest extends TestCase
         $config = new Config([
             'dsn' => 'https://example.test',
             'apiKey' => 'tal_live_testkey',
-            'environment' => 'development',
         ]);
         $config->enableFlags = true;
 
@@ -138,7 +135,6 @@ final class FlagsTest extends TestCase
         $config = new Config([
             'dsn' => 'https://example.test',
             'apiKey' => 'tal_live_testkey',
-            'environment' => 'development',
         ]);
         self::assertFalse($config->enableFlags);
         $config->applySdkDocument([

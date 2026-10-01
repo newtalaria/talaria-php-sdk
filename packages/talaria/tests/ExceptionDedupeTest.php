@@ -165,7 +165,6 @@ final class ExceptionDedupeTest extends TestCase
         return new TalariaClient([
             'dsn' => 'https://api.example.com',
             'apiKey' => 'tal_live_testkeytestkeytestkeytestkey123456',
-            'environment' => 'development',
             'defaultIntegrations' => false,
             'maxBatchSize' => 1,
             'flushIntervalMs' => 60_000,

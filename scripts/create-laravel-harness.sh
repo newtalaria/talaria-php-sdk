@@ -24,7 +24,6 @@ fi
   echo ""
   echo "TALARIA_DSN=http://127.0.0.1:8080"
   echo "TALARIA_API_KEY="
-  echo "TALARIA_ENVIRONMENT=development"
   echo "TALARIA_ENABLE_TRACING=true"
 } >> .env
 

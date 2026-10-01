@@ -119,7 +119,6 @@ final class SamplingTest extends TestCase
         $config = new Config([
             'dsn' => 'https://api.example.com',
             'apiKey' => 'tal_live_testkeytestkeytestkeytestkey123456',
-            'environment' => 'development',
             'enableTracing' => true,
         ]);
         self::assertFalse($config->enableTracing);
@@ -138,7 +137,6 @@ final class SamplingTest extends TestCase
         $config = new Config([
             'dsn' => 'https://api.example.com',
             'apiKey' => 'tal_live_testkeytestkeytestkeytestkey123456',
-            'environment' => 'development',
             'tracesSampleRate' => 0.5,
         ]);
         self::assertFalse($config->enableTracing);
@@ -159,7 +157,6 @@ final class SamplingTest extends TestCase
         $client = new TalariaClient(array_merge([
             'dsn' => 'https://api.example.com',
             'apiKey' => 'tal_live_testkeytestkeytestkeytestkey123456',
-            'environment' => 'development',
             'defaultIntegrations' => false,
             'maxBatchSize' => 50,
             'flushIntervalMs' => 60_000,

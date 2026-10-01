@@ -22,7 +22,6 @@ final class TalariaClientTest extends TestCase
         $client = new TalariaClient([
             'dsn' => 'https://api.example.com',
             'apiKey' => 'tal_live_testkeytestkeytestkeytestkey123456',
-            'environment' => 'development',
             'defaultIntegrations' => false,
             'maxBatchSize' => 50,
             'flushIntervalMs' => 60_000,
@@ -44,7 +43,6 @@ final class TalariaClientTest extends TestCase
         $client = new TalariaClient([
             'dsn' => 'https://api.example.com',
             'apiKey' => 'tal_live_testkeytestkeytestkeytestkey123456',
-            'environment' => 'production',
             'defaultIntegrations' => false,
             'maxBatchSize' => 1,
         ], $transport);
@@ -92,7 +90,6 @@ final class TalariaClientTest extends TestCase
         $client = new TalariaClient([
             'dsn' => 'https://api.example.com',
             'apiKey' => 'tal_live_testkeytestkeytestkeytestkey123456',
-            'environment' => 'development',
             'defaultIntegrations' => false,
             'maxBatchSize' => 1,
         ], $transport);
@@ -110,7 +107,6 @@ final class TalariaClientTest extends TestCase
         $client = new TalariaClient([
             'dsn' => 'https://api.example.com',
             'apiKey' => 'tal_live_testkeytestkeytestkeytestkey123456',
-            'environment' => 'development',
             'defaultIntegrations' => false,
             'maxBatchSize' => 1,
         ], $transport);
@@ -136,7 +132,6 @@ final class TalariaClientTest extends TestCase
         Talaria::init([
             'dsn' => 'https://api.example.com',
             'apiKey' => 'tal_live_testkeytestkeytestkeytestkey123456',
-            'environment' => 'staging',
             'defaultIntegrations' => false,
             'sampleRate' => 0,
         ]);
@@ -154,7 +149,6 @@ final class TalariaClientTest extends TestCase
         $client = new \Talaria\Client([
             'dsn' => 'https://api.example.com',
             'apiKey' => 'tal_live_testkeytestkeytestkeytestkey123456',
-            'environment' => 'development',
             'defaultIntegrations' => false,
             'maxBatchSize' => 1,
         ], $transport);
@@ -167,7 +161,6 @@ final class TalariaClientTest extends TestCase
         $client = new TalariaClient([
             'dsn' => 'https://api.example.com',
             'apiKey' => 'tal_live_testkeytestkeytestkeytestkey123456',
-            'environment' => 'development',
             'defaultIntegrations' => false,
             'maxBatchSize' => 1,
             'tags' => [
@@ -215,7 +208,6 @@ final class TalariaClientTest extends TestCase
         $client = new TalariaClient([
             'dsn' => 'https://api.example.com',
             'apiKey' => 'tal_live_deadkeydeadkeydeadkeydeadkey123456',
-            'environment' => 'development',
             'defaultIntegrations' => false,
             'maxBatchSize' => 1,
         ], $transport);
@@ -243,7 +235,6 @@ final class TalariaClientTest extends TestCase
         $client = new TalariaClient([
             'dsn' => 'https://api.example.com',
             'apiKey' => 'tal_live_testkeytestkeytestkeytestkey123456',
-            'environment' => 'development',
             'defaultIntegrations' => false,
             'maxBatchSize' => 1,
         ], $transport);
@@ -266,7 +257,6 @@ final class TalariaClientTest extends TestCase
         $client = new TalariaClient([
             'dsn' => 'https://api.example.com',
             'apiKey' => 'tal_live_testkeytestkeytestkeytestkey123456',
-            'environment' => 'development',
             'defaultIntegrations' => false,
             'maxBatchSize' => 1,
         ], $transport);
@@ -292,7 +282,6 @@ final class TalariaClientTest extends TestCase
         $client = new TalariaClient([
             'dsn' => 'https://api.example.com',
             'apiKey' => 'tal_live_testkeytestkeytestkeytestkey123456',
-            'environment' => 'development',
             'defaultIntegrations' => false,
             'maxBatchSize' => 1,
         ], $transport, spanTransport: $spans);
@@ -316,7 +305,6 @@ final class TalariaClientTest extends TestCase
         $client = new TalariaClient([
             'dsn' => 'https://api.example.com',
             'apiKey' => 'tal_live_testkeytestkeytestkeytestkey123456',
-            'environment' => 'development',
             'defaultIntegrations' => false,
             'tags' => ['service' => 'api'],
             'userId' => 'init-user',

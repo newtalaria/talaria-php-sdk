@@ -43,7 +43,11 @@ final class TracerTest extends TestCase
         self::assertSame($sql, $wire['attributes']['db.query.text']);
         self::assertSame('12', $wire['attributes']['db.query.count']);
         self::assertSame($all[0]->spanId, $wire['parentSpanId']);
-        self::assertArrayNotHasKey('dropped_span_count', $all[0]->toWire()['attributes'] ?? []);
+        self::assertArrayNotHasKey('environment', $wire);
+        $rootWire = $all[0]->toWire();
+        self::assertArrayNotHasKey('environment', $rootWire);
+        self::assertArrayNotHasKey('deployment.environment', $rootWire['resource'] ?? []);
+        self::assertArrayNotHasKey('dropped_span_count', $rootWire['attributes'] ?? []);
     }
 
     public function testInterleavedQueriesKeepLaterPhaseSpans(): void
@@ -207,7 +211,6 @@ final class TracerTest extends TestCase
         $client = new TalariaClient([
             'dsn' => 'https://api.example.com',
             'apiKey' => 'tal_live_testkeytestkeytestkeytestkey123456',
-            'environment' => 'development',
             'defaultIntegrations' => false,
             'enableTracing' => true,
             'tracesSampleRate' => 0.0,
@@ -236,7 +239,6 @@ final class TracerTest extends TestCase
         $client = new TalariaClient([
             'dsn' => 'https://api.example.com',
             'apiKey' => 'tal_live_testkeytestkeytestkeytestkey123456',
-            'environment' => 'development',
             'defaultIntegrations' => false,
             'maxBatchSize' => 50,
             'flushIntervalMs' => 60_000,

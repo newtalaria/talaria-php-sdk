@@ -6,14 +6,12 @@ namespace Talaria\SilverStripe;
 
 use SilverStripe\Core\Config\Configurable;
 use Talaria\Config as SdkConfig;
-use Talaria\Environment;
 
 /**
  * YAML / env-backed configuration for the Silverstripe adapter.
  *
  * Prefer environment variables:
  * - TALARIA_API_KEY
- * - TALARIA_ENVIRONMENT
  * - TALARIA_DSN (optional; defaults to https://ingest.newtalaria.com)
  * - TALARIA_BROWSER_DSN (optional; browser inject only — use when PHP DSN is not browser-reachable, e.g. http://host.docker.internal behind an HTTPS site)
  * - TALARIA_BROWSER_API_KEY (optional; browser inject only — CMS and public pages use this project; PHP keeps TALARIA_API_KEY)
@@ -35,7 +33,6 @@ class Config
 
         $dsn = self::resolveString($cfg->get('dsn') ?? '');
         $apiKey = self::resolveString($cfg->get('apiKey') ?? '');
-        $environment = self::resolveString($cfg->get('environment') ?? '');
         $release = self::resolveString($cfg->get('release') ?? '');
         $commitSha = self::resolveString($cfg->get('commitSha') ?? '');
         $service = self::resolveString($cfg->get('service') ?? '');
@@ -49,9 +46,6 @@ class Config
         if ($apiKey === '') {
             $apiKey = self::env('TALARIA_API_KEY');
         }
-        if ($environment === '') {
-            $environment = self::env('TALARIA_ENVIRONMENT') ?: 'production';
-        }
         if ($release === '') {
             $release = self::env('TALARIA_RELEASE');
         }
@@ -62,7 +56,6 @@ class Config
         $options = [
             'dsn' => $dsn,
             'apiKey' => $apiKey,
-            'environment' => $environment,
             'maxBatchSize' => (int) ($cfg->get('maxBatchSize') ?? 50),
             'flushIntervalMs' => (int) ($cfg->get('flushIntervalMs') ?? 2000),
             'sampleRate' => (float) ($cfg->get('sampleRate') ?? 1.0),
@@ -122,13 +115,6 @@ class Config
             return null;
         }
 
-        // Match TalariaClient: map aliases (test/uat → staging); unknown → production.
-        $environment = Environment::fromMixed(
-            is_string($options['environment'] ?? null) && $options['environment'] !== ''
-                ? $options['environment']
-                : 'production'
-        )->value;
-
         $tags = [
             'platform' => 'web',
             'runtime' => $runtimeTag,
@@ -158,7 +144,6 @@ class Config
         $browser = [
             'dsn' => $dsn,
             'apiKey' => $apiKey,
-            'environment' => $environment,
             'minLevel' => self::minLevel(),
             'enforceDefaultLevel' => self::enforceDefaultLevel(),
             'publicAnalytics' => $runtimeTag === 'silverstripe-frontend',
@@ -278,7 +263,7 @@ class Config
      */
     public static function browserSdkVersion(): string
     {
-        $version = static::config()->get('browserSdkVersion') ?? '0.4.0';
+        $version = static::config()->get('browserSdkVersion') ?? '0.5.0';
         if (!is_string($version) || $version === '') {
             return '0.4.0';
         }

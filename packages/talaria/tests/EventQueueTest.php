@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Talaria\Tests;
 
 use PHPUnit\Framework\TestCase;
-use Talaria\Environment;
 use Talaria\Event;
 use Talaria\SeverityLevel;
 use Talaria\Transport\EventQueue;
@@ -84,7 +83,6 @@ final class EventQueueTest extends TestCase
     {
         return new Event(
             message: $message,
-            environment: Environment::Development,
             level: SeverityLevel::Info,
         );
     }

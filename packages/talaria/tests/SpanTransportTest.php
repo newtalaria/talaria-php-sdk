@@ -45,7 +45,6 @@ final class SpanTransportTest extends TestCase
                 'http.route' => '/products',
             ],
             resource: ['service.name' => 'api'],
-            environment: 'production',
         );
         $span->end();
 
@@ -65,6 +64,7 @@ final class SpanTransportTest extends TestCase
         self::assertSame('GET /products', $body['input']['spans'][0]['name']);
         self::assertSame('server', $body['input']['spans'][0]['kind']);
         self::assertSame('4bf92f3577b34da6a3ce929d0e0e4736', $body['input']['spans'][0]['traceId']);
+        self::assertArrayNotHasKey('environment', $body['input']['spans'][0]);
         self::assertArrayNotHasKey('parentSpanId', $body['input']['spans'][0]);
     }
 

@@ -1144,7 +1144,6 @@ final class TalariaClient
 
         $event = new Event(
             message: $message,
-            environment: Environment::fromMixed($this->config->environment),
             level: $level,
             eventType: $level->toEventType(),
             title: $title,

@@ -39,7 +39,6 @@ final class InjectorFactory implements Factory
                 [
                     'dsn' => 'https://disabled.invalid',
                     'apiKey' => 'tal_live_disabled_placeholder_key_xxxxxxxxxxxx',
-                    'environment' => 'production',
                     'sampleRate' => 0.0,
                     'defaultIntegrations' => false,
                 ],

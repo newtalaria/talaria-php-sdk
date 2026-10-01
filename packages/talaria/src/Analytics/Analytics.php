@@ -183,7 +183,6 @@ final class Analytics
             spanId: $spanId,
             requestId: $this->stringOption($options, 'requestId') ?? $runtime['requestId'],
             platform: $this->stringOption($options, 'platform') ?? 'php',
-            environment: $this->config->environment,
             release: $this->config->release,
             url: $url,
             path: $path,

@@ -249,7 +249,6 @@ final class Tracer
             resource: $this->resource(),
             recording: true,
             onEnd: $this->onSpanEnded(...),
-            environment: $this->config->environment,
             release: $this->config->release,
             userId: $this->identity->userId,
             sessionId: $this->identity->sessionId !== '' ? $this->identity->sessionId : null,
@@ -420,7 +419,6 @@ final class Tracer
         $resource = [
             'telemetry.sdk.language' => 'php',
             'telemetry.sdk.name' => 'talaria-php',
-            'deployment.environment' => $this->config->environment,
         ];
 
         $service = $this->config->tags['service'] ?? null;

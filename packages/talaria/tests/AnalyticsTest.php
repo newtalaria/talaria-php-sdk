@@ -69,7 +69,7 @@ final class AnalyticsTest extends TestCase
         self::assertSame('track', $wire['kind']);
         self::assertSame('anon-browser', $wire['anonymousId']);
         self::assertSame('php', $wire['platform']);
-        self::assertSame('development', $wire['environment']);
+        self::assertArrayNotHasKey('environment', $wire);
         self::assertNotEmpty($wire['eventId']);
         self::assertNotEmpty($wire['sessionId']);
         self::assertNotEmpty($wire['timestamp']);
@@ -260,7 +260,6 @@ final class AnalyticsTest extends TestCase
         $client = new TalariaClient([
             'dsn' => 'https://api.example.com',
             'apiKey' => 'tal_live_testkeytestkeytestkeytestkey123456',
-            'environment' => 'development',
             'defaultIntegrations' => false,
             'enableTracing' => true,
             'tracesSampleRate' => 1.0,
@@ -318,7 +317,6 @@ final class AnalyticsTest extends TestCase
                 eventId: 'evt-1',
                 userId: 'user-1',
                 platform: 'php',
-                environment: 'production',
                 propertiesJson: '{"price":129.99}',
             ),
         ]);
@@ -337,6 +335,7 @@ final class AnalyticsTest extends TestCase
         self::assertSame('product_viewed', $body['input']['events'][0]['name']);
         self::assertSame('track', $body['input']['events'][0]['kind']);
         self::assertSame('anon-1', $body['input']['events'][0]['anonymousId']);
+        self::assertArrayNotHasKey('environment', $body['input']['events'][0]);
         self::assertSame('{"price":129.99}', $body['input']['events'][0]['propertiesJson']);
     }
 
@@ -351,7 +350,6 @@ final class AnalyticsTest extends TestCase
         $client = new TalariaClient(array_merge([
             'dsn' => 'https://api.example.com',
             'apiKey' => 'tal_live_testkeytestkeytestkeytestkey123456',
-            'environment' => 'development',
             'defaultIntegrations' => false,
             'maxBatchSize' => 50,
             'flushIntervalMs' => 60_000,

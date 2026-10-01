@@ -52,7 +52,6 @@ final class TalariaServiceProvider extends ServiceProvider
                 'apiKey' => str_starts_with($apiKey, 'tal_live_')
                     ? $apiKey
                     : 'tal_live_disabled_placeholder_key_xxxxxxxxxxxx',
-                'environment' => is_string($config['environment'] ?? null) ? $config['environment'] : 'production',
                 'release' => is_string($config['release'] ?? null) && $config['release'] !== ''
                     ? $config['release']
                     : null,

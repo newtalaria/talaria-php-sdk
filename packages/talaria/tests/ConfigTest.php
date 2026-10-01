@@ -42,7 +42,6 @@ final class ConfigTest extends TestCase
         $cfg = new Config([
             'dsn' => 'https://api.example.com',
             'apiKey' => 'tal_live_testkeytestkeytestkeytestkey123456',
-            'environment' => 'development',
         ]);
 
         self::assertFalse($cfg->enableAnalytics);
@@ -53,7 +52,6 @@ final class ConfigTest extends TestCase
         $cfg = new Config([
             'dsn' => 'https://api.example.com',
             'apiKey' => 'tal_live_testkeytestkeytestkeytestkey123456',
-            'environment' => 'development',
             'enableAnalytics' => false,
         ]);
 

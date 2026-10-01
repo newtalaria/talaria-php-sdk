@@ -5,7 +5,6 @@ declare(strict_types=1);
 return [
     'dsn' => env('TALARIA_DSN', 'https://ingest.newtalaria.com'),
     'api_key' => env('TALARIA_API_KEY'),
-    'environment' => env('TALARIA_ENVIRONMENT', env('APP_ENV', 'production')),
     'release' => env('TALARIA_RELEASE'),
     'commit_sha' => env('TALARIA_COMMIT_SHA'),
     'service' => env('TALARIA_SERVICE', env('APP_NAME', 'laravel')),

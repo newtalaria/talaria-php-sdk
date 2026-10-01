@@ -15,7 +15,6 @@ final class Event
      */
     public function __construct(
         public readonly string $message,
-        public readonly Environment $environment,
         public readonly SeverityLevel $level,
         public readonly ?string $eventType = null,
         public readonly ?string $title = null,
@@ -51,7 +50,6 @@ final class Event
         $wire = [
             '__className__' => 'IngestEventInput',
             'message' => $this->message,
-            'environment' => $this->environment->value,
             'level' => $this->level->value,
             'eventType' => $this->eventType ?? $this->level->toEventType(),
         ];

@@ -43,7 +43,7 @@ parameters:
 			path: src/TalariaClient.php
 
 		-
-			message: '#^Parameter \#1 \$options of class Talaria\\Config constructor expects array\{dsn\?\: string, baseUrl\?\: string, apiKey\: string, environment\: string\|Talaria\\Environment, release\?\: string\|null, commitSha\?\: string\|null, sampleRate\?\: float\|int, maxBatchSize\?\: int, \.\.\.\}, array\<string, mixed\> given\.$#'
+			message: '#^Parameter \#1 \$options of class Talaria\\Config constructor expects array\{dsn\?\: string, baseUrl\?\: string, apiKey\: string, release\?\: string\|null, commitSha\?\: string\|null, sampleRate\?\: float\|int, maxBatchSize\?\: int, flushIntervalMs\?\: int, \.\.\.\}, array\<string, mixed\> given\.$#'
 			identifier: argument.type
 			count: 1
 			path: src/TalariaClient.php

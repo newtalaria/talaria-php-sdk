@@ -22,7 +22,6 @@ final class AnalyticsEvent
         public readonly ?string $spanId = null,
         public readonly ?string $requestId = null,
         public readonly ?string $platform = null,
-        public readonly ?string $environment = null,
         public readonly ?string $release = null,
         public readonly ?string $url = null,
         public readonly ?string $path = null,
@@ -86,9 +85,6 @@ final class AnalyticsEvent
         }
         if ($this->platform !== null && $this->platform !== '') {
             $wire['platform'] = $this->platform;
-        }
-        if ($this->environment !== null && $this->environment !== '') {
-            $wire['environment'] = $this->environment;
         }
         if ($this->release !== null && $this->release !== '') {
             $wire['release'] = $this->release;

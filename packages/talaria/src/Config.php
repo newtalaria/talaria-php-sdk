@@ -11,8 +11,6 @@ final class Config
 {
     public readonly string $baseUrl;
     public readonly string $apiKey;
-    /** Normalized wire value: production | staging | development */
-    public readonly string $environment;
     public readonly ?string $release;
     public readonly ?string $commitSha;
     public float $sampleRate;
@@ -72,7 +70,6 @@ final class Config
      *   dsn?: string,
      *   baseUrl?: string,
      *   apiKey: string,
-     *   environment: string|Environment,
      *   release?: string|null,
      *   commitSha?: string|null,
      *   sampleRate?: float|int,
@@ -110,14 +107,8 @@ final class Config
             throw new \InvalidArgumentException('Talaria apiKey must start with tal_live_.');
         }
 
-        if (!isset($options['environment'])) {
-            throw new \InvalidArgumentException('Talaria init requires environment.');
-        }
-
         $this->baseUrl = rtrim($baseUrl, '/');
         $this->apiKey = trim($apiKey);
-        // Expose the wire string so callers can use $cfg->environment without enum casts.
-        $this->environment = Environment::fromMixed($options['environment'])->value;
         $this->release = isset($options['release']) && is_string($options['release']) && $options['release'] !== ''
             ? $options['release']
             : null;

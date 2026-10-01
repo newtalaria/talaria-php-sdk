@@ -19,11 +19,10 @@ The published config defaults the DSN to `https://ingest.newtalaria.com`. Set th
 
 ```env
 TALARIA_API_KEY=tal_live_…
-TALARIA_ENVIRONMENT=production
 TALARIA_RELEASE=1.4.2
 ```
 
-Do not call `Talaria::init()` yourself. Tracing and analytics follow Project settings.
+The API key decides the environment. Do not call `Talaria::init()` yourself. Tracing and analytics follow Project settings.
 
 ## License
 

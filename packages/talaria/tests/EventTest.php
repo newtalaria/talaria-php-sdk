@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Talaria\Tests;
 
 use PHPUnit\Framework\TestCase;
-use Talaria\Environment;
 use Talaria\Event;
 use Talaria\SeverityLevel;
 
@@ -15,7 +14,6 @@ final class EventTest extends TestCase
     {
         $event = new Event(
             message: 'Payment failed',
-            environment: Environment::Production,
             level: SeverityLevel::Error,
             title: 'RuntimeException',
             stackTrace: '#0 /app/Checkout.php',
@@ -40,7 +38,7 @@ final class EventTest extends TestCase
 
         self::assertSame('IngestEventInput', $wire['__className__']);
         self::assertSame('Payment failed', $wire['message']);
-        self::assertSame('production', $wire['environment']);
+        self::assertArrayNotHasKey('environment', $wire);
         self::assertSame('error', $wire['level']);
         self::assertSame('error', $wire['eventType']);
         self::assertSame('RuntimeException', $wire['title']);
@@ -64,7 +62,6 @@ final class EventTest extends TestCase
     {
         $event = new Event(
             message: 'Boom',
-            environment: Environment::Staging,
             level: SeverityLevel::Fatal,
         );
 
@@ -74,6 +71,6 @@ final class EventTest extends TestCase
     public function testEmptyMessageRejected(): void
     {
         $this->expectException(\InvalidArgumentException::class);
-        new Event(message: '  ', environment: Environment::Development, level: SeverityLevel::Info);
+        new Event(message: '  ', level: SeverityLevel::Info);
     }
 }

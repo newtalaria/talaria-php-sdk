@@ -26,7 +26,6 @@ Talaria\SilverStripe\Config:
   # project key. PHP keeps apiKey. Leave unset to share the PHP key.
   browserApiKey: '`TALARIA_BROWSER_API_KEY`'
   apiKey: '`TALARIA_API_KEY`'
-  environment: '`TALARIA_ENVIRONMENT`'
   release: '`TALARIA_RELEASE`'
   minLevel: warning
   # When true, scoped Talaria\Logger cannot go below minLevel (legacy hard floor).
@@ -46,7 +45,7 @@ Talaria\SilverStripe\Config:
   #   - 'googletagmanager.com'
   enableBrowserCms: true
   enableBrowserFrontend: true
-  browserSdkVersion: '0.4.1'
+  browserSdkVersion: '0.5.0'
   # Optional named logger presets for Approach B (Talaria::logger('name'))
   # loggers:
   #   businessDirectory:
