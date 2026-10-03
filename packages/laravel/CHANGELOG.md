@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.0.1 - 2026-10-03
+
+- HTML responses on the `web` middleware group load `@newtalaria/browser` 0.5.3 from jsDelivr. Set `TALARIA_BROWSER=false` to skip. Replay, heatmaps, web vitals, and analytics still follow project config.
+
 ## 2.0.0 - 2026-10-01
 
 - Breaking: remove the `environment` config key (`TALARIA_ENVIRONMENT` / `APP_ENV`). The API key decides the environment.

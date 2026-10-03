@@ -7,6 +7,7 @@ namespace Talaria\Laravel;
 use Illuminate\Contracts\Debug\ExceptionHandler;
 use Illuminate\Support\ServiceProvider;
 use Talaria\Config;
+use Talaria\Laravel\Http\Middleware\BrowserMiddleware;
 use Talaria\Laravel\Http\Middleware\TracingMiddleware;
 use Talaria\Laravel\Integration\AuthIntegration;
 use Talaria\Laravel\Integration\ConsoleIntegration;
@@ -131,6 +132,11 @@ final class TalariaServiceProvider extends ServiceProvider
             if (method_exists($kernel, 'pushMiddleware')) {
                 $kernel->pushMiddleware(TracingMiddleware::class);
             }
+        }
+
+        $router = $this->app->bound('router') ? $this->app->make('router') : null;
+        if (is_object($router) && method_exists($router, 'pushMiddlewareToGroup')) {
+            $router->pushMiddlewareToGroup('web', BrowserMiddleware::class);
         }
     }
 }

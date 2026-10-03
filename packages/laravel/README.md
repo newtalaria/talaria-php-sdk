@@ -24,6 +24,8 @@ TALARIA_RELEASE=1.4.2
 
 The API key decides the environment. Do not call `Talaria::init()` yourself. Tracing and analytics follow Project settings.
 
+HTML responses on the `web` middleware group load `@newtalaria/browser` from jsDelivr (`TALARIA_BROWSER_SDK_VERSION`, default `0.5.3`). Replay, heatmaps, and web vitals start only when the project allows them. Set `TALARIA_BROWSER=false` to skip the script. `TALARIA_BROWSER_DSN` and `TALARIA_BROWSER_API_KEY` override the PHP DSN and key for the browser only.
+
 ## License
 
 MIT

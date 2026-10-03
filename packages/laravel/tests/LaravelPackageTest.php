@@ -157,4 +157,48 @@ final class LaravelPackageTest extends TestCase
         self::assertNull($event->breadcrumbs);
         self::assertNull($event->userId);
     }
+
+    public function testWebHtmlResponseLoadsBrowserSdk(): void
+    {
+        $middleware = $this->app->make(\Talaria\Laravel\Http\Middleware\BrowserMiddleware::class);
+        $request = Request::create('/pricing', 'GET');
+        $response = $middleware->handle($request, static function () {
+            return new \Illuminate\Http\Response(
+                '<html><head><title>Pricing</title></head><body></body></html>',
+                200,
+                ['Content-Type' => 'text/html; charset=UTF-8'],
+            );
+        });
+        $html = (string) $response->getContent();
+        self::assertStringContainsString('@newtalaria/browser@0.5.3', $html);
+        self::assertStringContainsString('Talaria.init', $html);
+        self::assertStringContainsString('publicAnalytics', $html);
+        self::assertStringContainsString('tal_live_testkeytestkeytestkeytestkey123456', $html);
+        self::assertStringContainsString('</head>', $html);
+    }
+
+    public function testJsonResponseDoesNotLoadBrowserSdk(): void
+    {
+        $middleware = $this->app->make(\Talaria\Laravel\Http\Middleware\BrowserMiddleware::class);
+        $request = Request::create('/api/pricing', 'GET');
+        $response = $middleware->handle($request, static function () {
+            return new \Illuminate\Http\JsonResponse(['ok' => true]);
+        });
+        self::assertStringNotContainsString('Talaria.init', (string) $response->getContent());
+    }
+
+    public function testBrowserInjectionCanBeTurnedOff(): void
+    {
+        $this->app['config']->set('talaria.browser', false);
+        $middleware = $this->app->make(\Talaria\Laravel\Http\Middleware\BrowserMiddleware::class);
+        $request = Request::create('/pricing', 'GET');
+        $response = $middleware->handle($request, static function () {
+            return new \Illuminate\Http\Response(
+                '<html><head></head><body></body></html>',
+                200,
+                ['Content-Type' => 'text/html'],
+            );
+        });
+        self::assertStringNotContainsString('Talaria.init', (string) $response->getContent());
+    }
 }
