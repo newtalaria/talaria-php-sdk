@@ -16,6 +16,7 @@ use Talaria\Integration\ErrorIntegration;
 use Talaria\Integration\UncaughtExceptionDump;
 use Talaria\Protocol\ExceptionPayloadBuilder;
 use Talaria\Tracing\BreadcrumbBuffer;
+use Talaria\Tracing\ModelCallContext;
 use Talaria\Tracing\NullSpanTransport;
 use Talaria\Tracing\Span;
 use Talaria\Tracing\SpanKind;
@@ -520,6 +521,19 @@ final class TalariaClient
             $this->globalExtra,
             is_array($context['extra'] ?? null) ? $context['extra'] : [],
         );
+        $stamp = ModelCallContext::read($exception);
+        if ($stamp !== null) {
+            $tags = is_array($context['tags'] ?? null) ? $context['tags'] : [];
+            if (isset($stamp['model']) && is_string($stamp['model']) && $stamp['model'] !== '') {
+                $tags['gen_ai.request.model'] = $stamp['model'];
+            }
+            $tags['gen_ai.operation.name'] = $stamp['operation'];
+            $tags['gen_ai.provider.name'] = $stamp['provider'];
+            $context['tags'] = $tags;
+            if (isset($stamp['statusCode'])) {
+                $extra['status_code'] = $stamp['statusCode'];
+            }
+        }
 
         $defaultTitle = ExceptionPayloadBuilder::shortName($exception);
 
