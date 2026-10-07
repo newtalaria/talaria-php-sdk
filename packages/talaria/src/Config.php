@@ -13,6 +13,7 @@ final class Config
     public readonly string $apiKey;
     public readonly ?string $release;
     public readonly ?string $commitSha;
+    public readonly ?string $releaseRefKind;
     public float $sampleRate;
     public readonly int $maxBatchSize;
     public readonly int $flushIntervalMs;
@@ -109,12 +110,14 @@ final class Config
 
         $this->baseUrl = rtrim($baseUrl, '/');
         $this->apiKey = trim($apiKey);
-        $this->release = isset($options['release']) && is_string($options['release']) && $options['release'] !== ''
-            ? $options['release']
-            : null;
-        $this->commitSha = isset($options['commitSha']) && is_string($options['commitSha']) && $options['commitSha'] !== ''
-            ? $options['commitSha']
-            : null;
+        $identity = ReleaseIdentity::resolve(
+            isset($options['release']) && is_string($options['release']) ? $options['release'] : null,
+            isset($options['commitSha']) && is_string($options['commitSha']) ? $options['commitSha'] : null,
+            ReleaseIdentity::environment(),
+        );
+        $this->release = $identity['release'];
+        $this->commitSha = $identity['commitSha'];
+        $this->releaseRefKind = $identity['releaseRefKind'];
         $this->sampleRate = max(0.0, min(1.0, (float) ($options['sampleRate'] ?? 1.0)));
         $this->maxBatchSize = max(1, (int) ($options['maxBatchSize'] ?? 50));
         $this->flushIntervalMs = max(0, (int) ($options['flushIntervalMs'] ?? 2000));

@@ -31,7 +31,7 @@ Talaria::init([
 ]);
 ```
 
-The API key decides the environment. Tracing, analytics, and sample rates follow Project settings. See the [PHP guide](https://www.newtalaria.com/docs/sdk/php).
+The API key decides the environment. Tracing, analytics, and sample rates follow Project settings. Omit `release` in GitHub Actions or GitLab and the SDK sends `<ref>@<shortsha>` from the job environment. See [Releases](https://www.newtalaria.com/docs/guides/releases).
 
 ## Feature flags
 

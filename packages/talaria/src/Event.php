@@ -36,6 +36,7 @@ final class Event
         public readonly ?array $breadcrumbs = null,
         public readonly ?string $userAgent = null,
         public readonly ?string $anonymousId = null,
+        public readonly ?string $releaseRefKind = null,
     ) {
         if (trim($message) === '') {
             throw new \InvalidArgumentException('Event message must not be empty.');
@@ -71,6 +72,9 @@ final class Event
         }
         if ($this->commitSha !== null && $this->commitSha !== '') {
             $wire['commitSha'] = $this->commitSha;
+        }
+        if ($this->releaseRefKind !== null && $this->releaseRefKind !== '') {
+            $wire['releaseRefKind'] = $this->releaseRefKind;
         }
         if ($this->userId !== null && $this->userId !== '') {
             $wire['userId'] = $this->userId;
