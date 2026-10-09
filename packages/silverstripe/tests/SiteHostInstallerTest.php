@@ -164,6 +164,8 @@ CRON;
         self::assertStringNotContainsString('rsyslog', $include);
         self::assertStringContainsString('/container/logs/rsyslog/*', $yaml);
         self::assertStringContainsString('/container/logs/**/*.gz', $yaml);
+        self::assertStringContainsString('on_error: send_quiet', $yaml);
+        self::assertStringNotContainsString('on_error: send', str_replace('on_error: send_quiet', '', $yaml));
         self::assertStringContainsString('limit_mib: 128', $yaml);
         self::assertStringContainsString('deployment.environment.name', $yaml);
         self::assertSame(1, substr_count($yaml, 'receivers: [filelog]'));

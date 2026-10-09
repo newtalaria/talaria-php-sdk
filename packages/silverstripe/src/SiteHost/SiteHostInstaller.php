@@ -355,14 +355,14 @@ receivers:
       - type: regex_parser
         parse_from: body
         regex: '\[(?:[^\]]*:)?(?P<level>notice|info|warn|warning|error|crit|alert|emerg|critical|debug)\]'
-        on_error: send
+        on_error: send_quiet
       - type: regex_parser
         parse_from: body
         regex: '(?i)(?:^|\s)(?P<level>NOTICE|INFO|WARNING|WARN|ERROR|CRITICAL|CRIT|ALERT|EMERG|DEBUG)\s*:'
-        on_error: send
+        on_error: send_quiet
       - type: severity_parser
         parse_from: attributes.level
-        on_error: send
+        on_error: send_quiet
         mapping:
           info:
             - notice
@@ -773,6 +773,10 @@ YAML;
         $output = [];
         $code = 0;
         exec('supervisorctl update 2>&1', $output, $code);
+        if ($code === 0) {
+            $output = [];
+            exec('supervisorctl restart talaria-otelcol 2>&1', $output, $code);
+        }
         if ($code !== 0) {
             $detail = preg_replace(
                 '/tal_(live|ping)_[A-Za-z0-9_-]+/',
