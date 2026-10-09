@@ -31,6 +31,10 @@ vendor/bin/sake dev/build flush=1
 
 Optional YAML for log level, service name, and browser inject is in the [Silverstripe guide](https://www.newtalaria.com/docs/sdk/silverstripe). Tracing and analytics follow Project settings.
 
+## SiteHost
+
+`vendor/bin/talaria-sitehost install` reads `talaria/sitehost/monitors.json` and reconciles one crontab block and the supervisord probe. A second run reuses the stored ping tokens. Cron jobs still ping with `curl`. The SiteHost deploy action runs this command.
+
 ## License
 
 MIT

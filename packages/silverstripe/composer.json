@@ -50,6 +50,7 @@
     }
   },
   "bin": [
+    "bin/talaria-sitehost",
     "bin/talaria-sitehost-probe"
   ],
   "scripts": {
