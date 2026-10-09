@@ -232,6 +232,46 @@ final class Talaria
         return self::requireClient()->flags;
     }
 
+    /**
+     * Run a scheduled job and report in_progress, then ok or error.
+     *
+     * The check-in is sent before flush so a process that exits still records the result.
+     *
+     * @template T
+     * @param array{
+     *   crontab?: string,
+     *   timezone?: string,
+     *   intervalSeconds?: int,
+     *   marginSeconds?: int,
+     *   maxRuntimeSeconds?: int
+     * } $schedule
+     * @param callable(): T $callback
+     * @return T
+     */
+    public static function monitor(string $slug, array $schedule, callable $callback): mixed
+    {
+        $client = self::requireClient();
+        $client->checkIn($slug, 'in_progress', $schedule);
+        $started = microtime(true);
+        try {
+            $result = $callback();
+            $client->checkIn($slug, 'ok', $schedule + [
+                'durationSeconds' => microtime(true) - $started,
+            ]);
+            $client->flush();
+
+            return $result;
+        } catch (\Throwable $error) {
+            $client->captureException($error);
+            $client->checkIn($slug, 'error', $schedule + [
+                'durationSeconds' => microtime(true) - $started,
+                'logTail' => $error->getMessage(),
+            ]);
+            $client->flush();
+            throw $error;
+        }
+    }
+
     public static function resetRequestState(): void
     {
         self::$client?->resetRequestState();

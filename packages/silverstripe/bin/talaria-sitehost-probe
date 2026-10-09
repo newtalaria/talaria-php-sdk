@@ -1,0 +1,193 @@
+#!/usr/bin/env php
+<?php
+
+declare(strict_types=1);
+
+/**
+ * SiteHost container probe. Reports supervisord program state, free space
+ * on /container, and whether required environment names are set.
+ * Values are never sent.
+ */
+
+$autoloadCandidates = [
+    __DIR__ . '/../../../autoload.php',
+    __DIR__ . '/../vendor/autoload.php',
+];
+foreach ($autoloadCandidates as $autoload) {
+    if (is_file($autoload)) {
+        require $autoload;
+        break;
+    }
+}
+
+$baseUrl = rtrim((string) (getenv('TALARIA_DSN') ?: getenv('TALARIA_BASE_URL') ?: ''), '/');
+$apiKey = (string) (getenv('TALARIA_API_KEY') ?: '');
+if ($baseUrl === '' || !str_starts_with($apiKey, 'tal_live_')) {
+    fwrite(STDERR, "talaria-sitehost-probe needs TALARIA_DSN and TALARIA_API_KEY\n");
+    exit(1);
+}
+
+$program = (string) (getenv('TALARIA_PROBE_PROGRAM') ?: 'cron');
+$service = (string) (getenv('TALARIA_SERVICE_NAME') ?: 'silverstripe');
+$container = (string) (getenv('TALARIA_CONTAINER_NAME') ?: gethostname() ?: 'container');
+$resource = [
+    'service.name' => $service,
+    'container.name' => $container,
+    'host.name' => $container,
+    'deployment.environment.name' => (string) (getenv('TALARIA_ENVIRONMENT') ?: 'production'),
+];
+
+while (true) {
+    report($baseUrl, $apiKey, "supervisord:{$program}", programStatus($program), $resource);
+    report($baseUrl, $apiKey, 'disk:/container', diskStatus('/container'), $resource);
+    foreach (['TALARIA_API_KEY', 'SS_DATABASE_SERVER'] as $name) {
+        $present = getenv($name);
+        report(
+            $baseUrl,
+            $apiKey,
+            'env:' . strtolower($name),
+            is_string($present) && $present !== '' ? 'ok' : 'error',
+            $resource,
+            $name . (is_string($present) && $present !== '' ? ' is set' : ' is missing'),
+        );
+    }
+    emitMetrics($baseUrl, $apiKey, $resource);
+    sleep(60);
+}
+
+function programStatus(string $program): string
+{
+    $output = [];
+    $code = 0;
+    exec('supervisorctl status ' . escapeshellarg($program) . ' 2>/dev/null', $output, $code);
+    $line = $output[0] ?? '';
+    if (preg_match('/\bRUNNING\b/', $line) === 1) {
+        return 'ok';
+    }
+
+    return 'error';
+}
+
+function diskStatus(string $path): string
+{
+    $free = @disk_free_space($path);
+    $total = @disk_total_space($path);
+    if (!is_float($free) && !is_int($free)) {
+        return 'error';
+    }
+    if ((!is_float($total) && !is_int($total)) || $total <= 0) {
+        return 'error';
+    }
+    $ratio = $free / $total;
+
+    return $ratio >= 0.1 ? 'ok' : 'error';
+}
+
+/**
+ * @param array<string, string> $resource
+ */
+function report(
+    string $baseUrl,
+    string $apiKey,
+    string $slug,
+    string $status,
+    array $resource,
+    ?string $logTail = null,
+): void {
+    $schedule = [
+        'intervalSeconds' => 60,
+        'marginSeconds' => 90,
+        'resource' => $resource,
+    ];
+    if ($logTail !== null) {
+        $schedule['logTail'] = $logTail;
+    }
+    $body = json_encode(\Talaria\Monitor\MonitorCheckIn::payload($slug, $status, $schedule));
+    if (!is_string($body)) {
+        return;
+    }
+    $context = stream_context_create([
+        'http' => [
+            'method' => 'POST',
+            'header' => "Content-Type: application/json\r\nX-API-Key: {$apiKey}\r\n",
+            'content' => $body,
+            'timeout' => 10,
+            'ignore_errors' => true,
+        ],
+    ]);
+    @file_get_contents($baseUrl . '/monitors/checkIn', false, $context);
+}
+
+/**
+ * @param array<string, string> $resource
+ */
+function emitMetrics(string $baseUrl, string $apiKey, array $resource): void
+{
+    $points = [];
+    $memory = @file_get_contents('/sys/fs/cgroup/memory.current');
+    if (is_string($memory) && is_numeric(trim($memory))) {
+        $points[] = gauge('container.memory.usage', (float) trim($memory), $resource);
+    }
+    $cpu = @file_get_contents('/sys/fs/cgroup/cpu.stat');
+    if (is_string($cpu) && preg_match('/^usage_usec\s+(\d+)/m', $cpu, $match) === 1) {
+        $points[] = gauge('container.cpu.usage', ((float) $match[1]) / 1000000, $resource);
+    }
+    $used = @disk_total_space('/container');
+    $free = @disk_free_space('/container');
+    if (is_numeric($used) && is_numeric($free)) {
+        $points[] = gauge('container.filesystem.usage', (float) $used - (float) $free, $resource);
+        $points[] = gauge('container.filesystem.limit', (float) $used, $resource);
+    }
+    if ($points === []) {
+        return;
+    }
+    $attributes = [];
+    foreach ($resource as $key => $value) {
+        $attributes[] = ['key' => $key, 'value' => ['stringValue' => $value]];
+    }
+    $body = json_encode([
+        'resourceMetrics' => [[
+            'resource' => ['attributes' => $attributes],
+            'scopeMetrics' => [[
+                'metrics' => $points,
+            ]],
+        ]],
+    ]);
+    if (!is_string($body)) {
+        return;
+    }
+    $context = stream_context_create([
+        'http' => [
+            'method' => 'POST',
+            'header' => "Content-Type: application/json\r\nX-API-Key: {$apiKey}\r\n",
+            'content' => $body,
+            'timeout' => 10,
+            'ignore_errors' => true,
+        ],
+    ]);
+    @file_get_contents($baseUrl . '/otlp/v1/metrics', false, $context);
+}
+
+/**
+ * @param array<string, string> $resource
+ * @return array<string, mixed>
+ */
+function gauge(string $name, float $value, array $resource): array
+{
+    $attributes = [];
+    foreach ($resource as $key => $item) {
+        $attributes[] = ['key' => $key, 'value' => ['stringValue' => $item]];
+    }
+    $nano = (string) (int) (microtime(true) * 1000000000);
+
+    return [
+        'name' => $name,
+        'gauge' => [
+            'dataPoints' => [[
+                'asDouble' => $value,
+                'timeUnixNano' => $nano,
+                'attributes' => $attributes,
+            ]],
+        ],
+    ];
+}

@@ -13,6 +13,7 @@ use Talaria\Context\RuntimeContext;
 use Talaria\Exception\TransportException;
 use Talaria\Flags\Flags;
 use Talaria\Integration\ErrorIntegration;
+use Talaria\Monitor\MonitorCheckIn;
 use Talaria\Integration\UncaughtExceptionDump;
 use Talaria\Protocol\ExceptionPayloadBuilder;
 use Talaria\Tracing\BreadcrumbBuffer;
@@ -880,6 +881,34 @@ final class TalariaClient
     public function getIdentity(): Identity
     {
         return $this->identity;
+    }
+
+    /**
+     * Post a job check-in immediately. The event queue is not used.
+     *
+     * @param array{
+     *   crontab?: string,
+     *   timezone?: string,
+     *   intervalSeconds?: int,
+     *   marginSeconds?: int,
+     *   maxRuntimeSeconds?: int,
+     *   durationSeconds?: float,
+     *   logTail?: string,
+     *   resource?: array<string, string>
+     * } $schedule
+     * @return array<string, mixed>
+     */
+    public function checkIn(string $slug, string $status, array $schedule = []): array
+    {
+        if ($this->httpTransport === null) {
+            throw new \RuntimeException('Talaria check-in requires the HTTP transport.');
+        }
+
+        return $this->httpTransport->postJson(
+            'monitors/checkIn',
+            MonitorCheckIn::payload($slug, $status, $schedule),
+            max(2.0, $this->config->httpTimeoutSeconds),
+        );
     }
 
     /**

@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.1.0 - 2026-10-09
+
+- `Talaria::monitor` sends `in_progress`, runs the callback, then `ok` or `error`, and posts `monitors/checkIn`. The API key needs `monitors:write`.
+
 ## 2.0.0 - 2026-10-01
 
 - Breaking: `environment` is no longer an init option and is not sent on events, spans, or analytics. The API key decides the environment.

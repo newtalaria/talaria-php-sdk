@@ -27,7 +27,7 @@
     "monolog/monolog": "^1.25 || ^3.0",
     "silverstripe/framework": "^4.13 || ^5 || ^6",
     "silverstripe/vendor-plugin": "^1.0 || ^2.0",
-    "talaria/talaria": "^2.0.0"
+    "talaria/talaria": "^2.1.0"
   },
   "require-dev": {
     "phpunit/phpunit": "^11.0"
@@ -49,6 +49,9 @@
       "Talaria\\Tests\\": "tests/"
     }
   },
+  "bin": [
+    "bin/talaria-sitehost-probe"
+  ],
   "scripts": {
     "test": "phpunit"
   },
