@@ -106,6 +106,77 @@ CRON;
         SiteHostInstaller::reconcileSupervisor(SiteHostInstaller::PROBE_BEGIN . "\ncommand=old\n", '/container/application');
     }
 
+    public function testCollectorBlockIsReplacedInPlace(): void
+    {
+        $existing = "[program:cron]\ncommand=cron -f\n\n"
+            . SiteHostInstaller::COLLECTOR_BEGIN . "\ncommand=old\n" . SiteHostInstaller::COLLECTOR_END . "\n";
+        $once = SiteHostInstaller::reconcileCollector(
+            $existing,
+            '/container/application',
+            '/container/config/talaria-otelcol.yaml',
+        );
+        $twice = SiteHostInstaller::reconcileCollector(
+            $once,
+            '/container/application/',
+            '/container/config/talaria-otelcol.yaml',
+        );
+
+        self::assertSame($once, $twice);
+        self::assertSame(1, substr_count($twice, '[program:talaria-otelcol]'));
+        self::assertStringContainsString(
+            'command=/container/application/.talaria/otelcol-contrib --config=/container/config/talaria-otelcol.yaml',
+            $twice,
+        );
+        self::assertStringContainsString('[program:cron]', $twice);
+        self::assertStringNotContainsString('command=old', $twice);
+    }
+
+    public function testBrokenCollectorBlockFails(): void
+    {
+        $this->expectException(SiteHostInstallException::class);
+        $this->expectExceptionMessage('end-talaria-otelcol');
+        SiteHostInstaller::reconcileCollector(
+            SiteHostInstaller::COLLECTOR_BEGIN . "\ncommand=old\n",
+            '/container/application',
+            '/container/config/talaria-otelcol.yaml',
+        );
+    }
+
+    public function testCollectorConfigPostsLogsToOtlpAndOmitsTheApiKey(): void
+    {
+        $yaml = SiteHostInstaller::collectorConfig(
+            'https://api.newtalaria.com/otlp',
+            'silverstripe',
+            'web',
+            'production',
+        );
+        $include = strstr($yaml, 'exclude:', true);
+
+        self::assertIsString($include);
+        self::assertStringContainsString('endpoint: "https://api.newtalaria.com/otlp"', $yaml);
+        self::assertStringContainsString('${env:TALARIA_API_KEY}', $yaml);
+        self::assertStringNotContainsString('tal_live_', $yaml);
+        self::assertStringContainsString('/container/logs/apache2/error.log', $include);
+        self::assertStringContainsString('/container/logs/php-fpm/*.log', $include);
+        self::assertStringContainsString('/container/logs/cron-*.log', $include);
+        self::assertStringContainsString('/container/logs/sitehost/sitehost.log', $include);
+        self::assertStringNotContainsString('access.log', $include);
+        self::assertStringNotContainsString('rsyslog', $include);
+        self::assertStringContainsString('/container/logs/rsyslog/*', $yaml);
+        self::assertStringContainsString('/container/logs/**/*.gz', $yaml);
+        self::assertStringContainsString('limit_mib: 128', $yaml);
+        self::assertStringContainsString('deployment.environment.name', $yaml);
+        self::assertSame(1, substr_count($yaml, 'receivers: [filelog]'));
+        self::assertStringNotContainsString("\n    metrics:", $yaml);
+    }
+
+    public function testCollectorConfigRejectsABareHost(): void
+    {
+        $this->expectException(SiteHostInstallException::class);
+        $this->expectExceptionMessage('/otlp');
+        SiteHostInstaller::collectorConfig('https://api.newtalaria.com', 'silverstripe', 'web', 'production');
+    }
+
     public function testFailedRegistrationDoesNotWriteCrontab(): void
     {
         $this->writeSpec();

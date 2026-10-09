@@ -5,6 +5,12 @@ All notable changes to `talaria/silverstripe` are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.2] - 2026-10-09
+
+### Added
+
+- `vendor/bin/talaria-sitehost install` downloads otelcol-contrib 0.162.0 and adds a supervisord program that tails the container's Apache error, PHP-FPM, cron, and SiteHost logs to `POST /otlp/v1/logs`. The API key stays in the process environment.
+
 ## [2.1.1] - 2026-10-09
 
 ### Added

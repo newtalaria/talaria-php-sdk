@@ -33,7 +33,7 @@ Optional YAML for log level, service name, and browser inject is in the [Silvers
 
 ## SiteHost
 
-`vendor/bin/talaria-sitehost install` reads `talaria/sitehost/monitors.json` and reconciles one crontab block and the supervisord probe. A second run reuses the stored ping tokens. Cron jobs still ping with `curl`. The SiteHost deploy action runs this command.
+`vendor/bin/talaria-sitehost install` reads `talaria/sitehost/monitors.json` and reconciles one crontab block, the supervisord probe, and an OpenTelemetry Collector that tails container logs to `/otlp/v1/logs`. A second run reuses the stored ping tokens and the collector binary. Cron jobs still ping with `curl`. The SiteHost deploy action runs this command.
 
 ## License
 
