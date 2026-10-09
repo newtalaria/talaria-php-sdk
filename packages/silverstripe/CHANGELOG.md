@@ -5,6 +5,12 @@ All notable changes to `talaria/silverstripe` are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+
+- SiteHost log collection moved to the deploy action. `vendor/bin/talaria-sitehost install` reconciles monitors and the probe only.
+
 ## [2.1.3] - 2026-10-09
 
 ### Fixed
