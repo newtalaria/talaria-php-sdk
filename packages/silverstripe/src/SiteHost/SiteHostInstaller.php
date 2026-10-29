@@ -426,7 +426,7 @@ final class SiteHostInstaller
         string $url,
         string $slug,
     ): string {
-        $checkInUrl = $url . '/v1/monitors/' . rawurlencode($slug) . '/check-ins';
+        $checkInUrl = $url . '/v1/check-ins';
         $curl = "curl -fsS -m 15 -X POST -H 'X-Talaria-Monitor-Token: {$token}' -H 'Content-Type: application/json'";
 
         return $schedule . ' ' . $curl . " -d '{\"status\":\"in_progress\"}' '{$checkInUrl}'; "

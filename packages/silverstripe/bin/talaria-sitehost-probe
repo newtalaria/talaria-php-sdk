@@ -118,7 +118,7 @@ function report(
             'ignore_errors' => true,
         ],
     ]);
-    @file_get_contents($baseUrl . '/v1/monitors/' . rawurlencode($slug) . '/check-ins', false, $context);
+    @file_get_contents($baseUrl . '/v1/check-ins', false, $context);
 }
 
 /**

@@ -59,8 +59,8 @@ CRON;
             'process-job-queue' => 'tal_mon_aaa',
             'sync-careers' => 'tal_mon_bbb',
         ];
-        $once = SiteHostInstaller::reconcileCrontab($legacy, $jobs, 'https://api.newtalaria.com', $tokens);
-        $twice = SiteHostInstaller::reconcileCrontab($once, $jobs, 'https://api.newtalaria.com/', $tokens);
+        $once = SiteHostInstaller::reconcileCrontab($legacy, $jobs, 'https://ingest.newtalaria.com', $tokens);
+        $twice = SiteHostInstaller::reconcileCrontab($once, $jobs, 'https://ingest.newtalaria.com/', $tokens);
 
         self::assertSame($once, $twice);
         self::assertSame(1, substr_count($twice, SiteHostInstaller::CRON_BEGIN));
@@ -69,14 +69,14 @@ CRON;
         self::assertStringContainsString('# talaria-sitehost retired * * * * * cd /container/application && vendor/bin/sake dev/tasks/ProcessJobQueueTask', $twice);
         self::assertStringContainsString('SomethingElse', $twice);
         self::assertDoesNotMatchRegularExpression('/^0 1 \* \* \* cd /m', $twice);
-        self::assertStringContainsString("https://api.newtalaria.com/v1/monitors/", $twice);
+        self::assertStringContainsString("https://ingest.newtalaria.com/v1/check-ins", $twice);
     }
 
     public function testExistingMonitorLinesFoldIntoOneBlock(): void
     {
         $jobs = [$this->jobs()[0]];
-        $existing = "* * * * * curl https://api.example/v1/monitors/process-job-queue/check-ins; cd /container/application && vendor/bin/sake dev/tasks/ProcessJobQueueTask; exit 0 # talaria-monitor:process-job-queue\n";
-        $once = SiteHostInstaller::reconcileCrontab($existing, $jobs, 'https://api.newtalaria.com', [
+        $existing = "* * * * * curl https://api.example/v1/check-ins; cd /container/application && vendor/bin/sake dev/tasks/ProcessJobQueueTask; exit 0 # talaria-monitor:process-job-queue\n";
+        $once = SiteHostInstaller::reconcileCrontab($existing, $jobs, 'https://ingest.newtalaria.com', [
             'process-job-queue' => 'tal_mon_aaa',
         ]);
 
@@ -268,7 +268,7 @@ CRON;
             $this->root . '/cron/crontab',
             $this->root . '/supervisor/supervisord.conf',
             $this->root . '/app/.talaria-monitor-tokens',
-            'https://api.newtalaria.com',
+            'https://ingest.newtalaria.com',
             'tal_prod_testkeytestkeytestkeytestkey123456',
             $transport,
         );

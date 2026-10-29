@@ -17,7 +17,7 @@ use Talaria\Transport\ServerpodHttpTransport;
 
 final class ServerpodHttpTransportTest extends TestCase
 {
-    public function testSendBatchPostsIngestBatchEnvelope(): void
+    public function testSendBatchPostsToV1EventsEndpoint(): void
     {
         $history = [];
         $mock = new MockHandler([new Response(200, [], '{}')]);
