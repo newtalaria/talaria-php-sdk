@@ -64,5 +64,10 @@
     }
   },
   "minimum-stability": "dev",
-  "prefer-stable": true
+  "prefer-stable": true,
+  "repositories": [{
+    "name": "talaria",
+    "type": "path",
+    "url": "../talaria"
+  }]
 }
