@@ -327,8 +327,8 @@ final class GuzzleMiddlewareTest extends TestCase
     private function client(FakeSpanTransport $spans, ?FakeTransport $events = null, float $sampleRate = 1.0): TalariaClient
     {
         $client = new TalariaClient([
-            'dsn' => 'https://api.example.com',
-            'apiKey' => 'tal_live_testkeytestkeytestkeytestkey123456',
+            'url' => 'https://api.example.com',
+            'apiKey' => 'tal_prod_testkeytestkeytestkeytestkey123456',
             'defaultIntegrations' => false,
             'maxBatchSize' => 50,
             'flushIntervalMs' => 60_000,

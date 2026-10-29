@@ -20,8 +20,8 @@ final class TalariaClientTest extends TestCase
     {
         $transport = new FakeTransport();
         $client = new TalariaClient([
-            'dsn' => 'https://api.example.com',
-            'apiKey' => 'tal_live_testkeytestkeytestkeytestkey123456',
+            'url' => 'https://api.example.com',
+            'apiKey' => 'tal_prod_testkeytestkeytestkeytestkey123456',
             'defaultIntegrations' => false,
             'maxBatchSize' => 50,
             'flushIntervalMs' => 60_000,
@@ -41,8 +41,8 @@ final class TalariaClientTest extends TestCase
     {
         $transport = new FakeTransport();
         $client = new TalariaClient([
-            'dsn' => 'https://api.example.com',
-            'apiKey' => 'tal_live_testkeytestkeytestkeytestkey123456',
+            'url' => 'https://api.example.com',
+            'apiKey' => 'tal_prod_testkeytestkeytestkeytestkey123456',
             'defaultIntegrations' => false,
             'maxBatchSize' => 1,
         ], $transport);
@@ -88,8 +88,8 @@ final class TalariaClientTest extends TestCase
     {
         $transport = new FakeTransport();
         $client = new TalariaClient([
-            'dsn' => 'https://api.example.com',
-            'apiKey' => 'tal_live_testkeytestkeytestkeytestkey123456',
+            'url' => 'https://api.example.com',
+            'apiKey' => 'tal_prod_testkeytestkeytestkeytestkey123456',
             'defaultIntegrations' => false,
             'maxBatchSize' => 1,
         ], $transport);
@@ -105,8 +105,8 @@ final class TalariaClientTest extends TestCase
     {
         $transport = new FakeTransport();
         $client = new TalariaClient([
-            'dsn' => 'https://api.example.com',
-            'apiKey' => 'tal_live_testkeytestkeytestkeytestkey123456',
+            'url' => 'https://api.example.com',
+            'apiKey' => 'tal_prod_testkeytestkeytestkeytestkey123456',
             'defaultIntegrations' => false,
             'maxBatchSize' => 1,
         ], $transport);
@@ -130,8 +130,8 @@ final class TalariaClientTest extends TestCase
     public function testFacadeInitAndCapture(): void
     {
         Talaria::init([
-            'dsn' => 'https://api.example.com',
-            'apiKey' => 'tal_live_testkeytestkeytestkeytestkey123456',
+            'url' => 'https://api.example.com',
+            'apiKey' => 'tal_prod_testkeytestkeytestkeytestkey123456',
             'defaultIntegrations' => false,
             'sampleRate' => 0,
         ]);
@@ -147,8 +147,8 @@ final class TalariaClientTest extends TestCase
         self::assertTrue(class_exists(\Talaria\Client::class));
         $transport = new FakeTransport();
         $client = new \Talaria\Client([
-            'dsn' => 'https://api.example.com',
-            'apiKey' => 'tal_live_testkeytestkeytestkeytestkey123456',
+            'url' => 'https://api.example.com',
+            'apiKey' => 'tal_prod_testkeytestkeytestkeytestkey123456',
             'defaultIntegrations' => false,
             'maxBatchSize' => 1,
         ], $transport);
@@ -159,8 +159,8 @@ final class TalariaClientTest extends TestCase
     {
         $transport = new FakeTransport();
         $client = new TalariaClient([
-            'dsn' => 'https://api.example.com',
-            'apiKey' => 'tal_live_testkeytestkeytestkeytestkey123456',
+            'url' => 'https://api.example.com',
+            'apiKey' => 'tal_prod_testkeytestkeytestkeytestkey123456',
             'defaultIntegrations' => false,
             'maxBatchSize' => 1,
             'tags' => [
@@ -206,8 +206,8 @@ final class TalariaClientTest extends TestCase
             bodyMessage: 'Invalid API key',
         );
         $client = new TalariaClient([
-            'dsn' => 'https://api.example.com',
-            'apiKey' => 'tal_live_deadkeydeadkeydeadkeydeadkey123456',
+            'url' => 'https://api.example.com',
+            'apiKey' => 'tal_prod_deadkeydeadkeydeadkeydeadkey123456',
             'defaultIntegrations' => false,
             'maxBatchSize' => 1,
         ], $transport);
@@ -233,8 +233,8 @@ final class TalariaClientTest extends TestCase
             bodyMessage: 'quota exceeded',
         );
         $client = new TalariaClient([
-            'dsn' => 'https://api.example.com',
-            'apiKey' => 'tal_live_testkeytestkeytestkeytestkey123456',
+            'url' => 'https://api.example.com',
+            'apiKey' => 'tal_prod_testkeytestkeytestkeytestkey123456',
             'defaultIntegrations' => false,
             'maxBatchSize' => 1,
         ], $transport);
@@ -255,8 +255,8 @@ final class TalariaClientTest extends TestCase
             503,
         );
         $client = new TalariaClient([
-            'dsn' => 'https://api.example.com',
-            'apiKey' => 'tal_live_testkeytestkeytestkeytestkey123456',
+            'url' => 'https://api.example.com',
+            'apiKey' => 'tal_prod_testkeytestkeytestkeytestkey123456',
             'defaultIntegrations' => false,
             'maxBatchSize' => 1,
         ], $transport);
@@ -280,8 +280,8 @@ final class TalariaClientTest extends TestCase
         );
         $spans = new FakeSpanTransport();
         $client = new TalariaClient([
-            'dsn' => 'https://api.example.com',
-            'apiKey' => 'tal_live_testkeytestkeytestkeytestkey123456',
+            'url' => 'https://api.example.com',
+            'apiKey' => 'tal_prod_testkeytestkeytestkeytestkey123456',
             'defaultIntegrations' => false,
             'maxBatchSize' => 1,
         ], $transport, spanTransport: $spans);
@@ -303,8 +303,8 @@ final class TalariaClientTest extends TestCase
     {
         $transport = new FakeTransport();
         $client = new TalariaClient([
-            'dsn' => 'https://api.example.com',
-            'apiKey' => 'tal_live_testkeytestkeytestkeytestkey123456',
+            'url' => 'https://api.example.com',
+            'apiKey' => 'tal_prod_testkeytestkeytestkeytestkey123456',
             'defaultIntegrations' => false,
             'tags' => ['service' => 'api'],
             'userId' => 'init-user',

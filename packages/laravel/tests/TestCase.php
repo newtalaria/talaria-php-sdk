@@ -53,7 +53,7 @@ abstract class TestCase extends BaseTestCase
         $app->instance(TransportInterface::class, $this->transport);
         $app->instance(SpanTransportInterface::class, $this->spans);
         $app['config']->set('talaria.dsn', 'https://api.example.com');
-        $app['config']->set('talaria.api_key', 'tal_live_testkeytestkeytestkeytestkey123456');
+        $app['config']->set('talaria.api_key', 'tal_prod_testkeytestkeytestkeytestkey123456');
         $app['config']->set('talaria.enable_tracing', true);
         $app['config']->set('talaria.traces_sample_rate', 1.0);
         $app['config']->set('talaria.min_level', 'debug');

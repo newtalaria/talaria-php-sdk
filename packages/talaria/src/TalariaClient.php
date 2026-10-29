@@ -122,7 +122,7 @@ final class TalariaClient
         $this->capturedThrowables = new \SplObjectStorage();
 
         $transport ??= new ServerpodHttpTransport(
-            $this->config->baseUrl,
+            $this->config->url,
             $this->config->apiKey,
             $this->config->httpTimeoutSeconds,
         );
@@ -134,7 +134,7 @@ final class TalariaClient
             $spanTransport = $transport instanceof NullTransport
                 ? new NullSpanTransport()
                 : new SpanTransport(
-                    $this->config->baseUrl,
+                    $this->config->url,
                     $this->config->apiKey,
                     $this->config->httpTimeoutSeconds,
                 );
@@ -157,7 +157,7 @@ final class TalariaClient
             $analyticsTransport = $transport instanceof NullTransport
                 ? new NullAnalyticsTransport()
                 : new AnalyticsTransport(
-                    $this->config->baseUrl,
+                    $this->config->url,
                     $this->config->apiKey,
                     $this->config->httpTimeoutSeconds,
                 );
@@ -905,7 +905,7 @@ final class TalariaClient
         }
 
         return $this->httpTransport->postJson(
-            'monitors/checkIn',
+            "v1/monitors/{$slug}/check-ins",
             MonitorCheckIn::payload($slug, $status, $schedule),
             max(2.0, $this->config->httpTimeoutSeconds),
         );

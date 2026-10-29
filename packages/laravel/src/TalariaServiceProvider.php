@@ -34,7 +34,7 @@ final class TalariaServiceProvider extends ServiceProvider
 
         $this->app->singleton(TalariaClient::class, function ($app): TalariaClient {
             $config = $app['config']->get('talaria', []);
-            $dsn = is_string($config['dsn'] ?? null) ? $config['dsn'] : '';
+            $url = is_string($config['url'] ?? null) ? $config['url'] : '';
             $apiKey = is_string($config['api_key'] ?? null) ? $config['api_key'] : '';
             $tags = [
                 'platform' => 'php',
@@ -49,10 +49,10 @@ final class TalariaServiceProvider extends ServiceProvider
             }
 
             $options = [
-                'dsn' => $dsn !== '' ? $dsn : 'https://disabled.invalid',
-                'apiKey' => str_starts_with($apiKey, 'tal_live_')
+                'url' => $url !== '' ? $url : 'https://disabled.invalid',
+                'apiKey' => preg_match('/^tal_(prod|stg|test|dev)_/', $apiKey)
                     ? $apiKey
-                    : 'tal_live_disabled_placeholder_key_xxxxxxxxxxxx',
+                    : 'tal_dev_disabled_placeholder_key_xxxxxxxxxxxx',
                 'release' => is_string($config['release'] ?? null) && $config['release'] !== ''
                     ? $config['release']
                     : null,
@@ -76,7 +76,7 @@ final class TalariaServiceProvider extends ServiceProvider
                 ? $app->make(SpanTransportInterface::class)
                 : null;
 
-            if ($transport === null && ($dsn === '' || !str_starts_with($apiKey, 'tal_live_'))) {
+            if ($transport === null && ($url === '' || !preg_match('/^tal_(prod|stg|test|dev)_/', $apiKey))) {
                 $transport = new NullTransport();
                 $options['sampleRate'] = 0.0;
             }

@@ -9,7 +9,7 @@ namespace Talaria;
  */
 final class Config
 {
-    public readonly string $baseUrl;
+    public readonly string $url;
     public readonly string $apiKey;
     public readonly ?string $release;
     public readonly ?string $commitSha;
@@ -68,8 +68,7 @@ final class Config
 
     /**
      * @param array{
-     *   dsn?: string,
-     *   baseUrl?: string,
+     *   url?: string,
      *   apiKey: string,
      *   release?: string|null,
      *   commitSha?: string|null,
@@ -95,20 +94,20 @@ final class Config
      */
     public function __construct(array $options)
     {
-        $baseUrl = $options['dsn'] ?? $options['baseUrl'] ?? null;
-        if (!is_string($baseUrl) || trim($baseUrl) === '') {
-            throw new \InvalidArgumentException('Talaria init requires dsn or baseUrl.');
+        $url = $options['url'] ?? null;
+        if (!is_string($url) || trim($url) === '') {
+            $url = 'https://ingest.newtalaria.com';
         }
 
         $apiKey = $options['apiKey'] ?? '';
         if (!is_string($apiKey) || trim($apiKey) === '') {
             throw new \InvalidArgumentException('Talaria init requires apiKey.');
         }
-        if (!str_starts_with($apiKey, 'tal_live_')) {
-            throw new \InvalidArgumentException('Talaria apiKey must start with tal_live_.');
+        if (!preg_match('/^tal_(prod|stg|test|dev)_/', $apiKey)) {
+            throw new \InvalidArgumentException('Talaria apiKey must start with tal_prod_, tal_stg_, tal_test_, or tal_dev_.');
         }
 
-        $this->baseUrl = rtrim($baseUrl, '/');
+        $this->url = rtrim($url, '/');
         $this->apiKey = trim($apiKey);
         $identity = ReleaseIdentity::resolve(
             isset($options['release']) && is_string($options['release']) ? $options['release'] : null,

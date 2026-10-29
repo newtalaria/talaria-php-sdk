@@ -269,7 +269,7 @@ CRON;
             $this->root . '/supervisor/supervisord.conf',
             $this->root . '/app/.talaria-monitor-tokens',
             'https://api.newtalaria.com',
-            'tal_live_test',
+            'tal_prod_test',
             $transport,
         );
     }

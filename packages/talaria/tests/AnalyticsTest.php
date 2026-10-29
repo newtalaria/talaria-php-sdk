@@ -258,8 +258,8 @@ final class AnalyticsTest extends TestCase
         $spans = new FakeSpanTransport();
         $analytics = new FakeAnalyticsTransport();
         $client = new TalariaClient([
-            'dsn' => 'https://api.example.com',
-            'apiKey' => 'tal_live_testkeytestkeytestkeytestkey123456',
+            'url' => 'https://api.example.com',
+            'apiKey' => 'tal_prod_testkeytestkeytestkeytestkey123456',
             'defaultIntegrations' => false,
             'enableTracing' => true,
             'tracesSampleRate' => 1.0,
@@ -302,7 +302,7 @@ final class AnalyticsTest extends TestCase
 
         $transport = new AnalyticsTransport(
             'https://api.example.com/',
-            'tal_live_abc',
+            'tal_prod_abc',
             2.0,
             $http,
         );
@@ -325,7 +325,7 @@ final class AnalyticsTest extends TestCase
         $request = $history[0]['request'];
         self::assertSame('POST', $request->getMethod());
         self::assertSame('https://api.example.com/analytics/ingestBatch', (string) $request->getUri());
-        self::assertSame('tal_live_abc', $request->getHeaderLine('X-API-Key'));
+        self::assertSame('tal_prod_abc', $request->getHeaderLine('X-API-Key'));
 
         /** @var array<string, mixed> $body */
         $body = json_decode((string) $request->getBody(), true, 512, JSON_THROW_ON_ERROR);
@@ -348,8 +348,8 @@ final class AnalyticsTest extends TestCase
         ?FakeTransport $events = null,
     ): TalariaClient {
         $client = new TalariaClient(array_merge([
-            'dsn' => 'https://api.example.com',
-            'apiKey' => 'tal_live_testkeytestkeytestkeytestkey123456',
+            'url' => 'https://api.example.com',
+            'apiKey' => 'tal_prod_testkeytestkeytestkeytestkey123456',
             'defaultIntegrations' => false,
             'maxBatchSize' => 50,
             'flushIntervalMs' => 60_000,

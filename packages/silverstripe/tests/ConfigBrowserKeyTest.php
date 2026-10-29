@@ -22,18 +22,18 @@ final class ConfigBrowserKeyTest extends TestCase
     {
         $this->clearBrowserKeyEnv();
         $this->withConfig([
-            'apiKey' => 'tal_live_php',
+            'apiKey' => 'tal_prod_php',
             'browserApiKey' => '',
-            'dsn' => 'https://ingest.example.test',
+            'url' => 'https://ingest.example.test',
         ], function (): void {
             $frontend = Config::toBrowserOptions('silverstripe-frontend');
             $cms = Config::toBrowserOptions('silverstripe-cms');
 
             self::assertIsArray($frontend);
             self::assertIsArray($cms);
-            self::assertSame('tal_live_php', $frontend['apiKey']);
-            self::assertSame('tal_live_php', $cms['apiKey']);
-            self::assertSame('tal_live_php', Config::toClientOptions()['apiKey']);
+            self::assertSame('tal_prod_php', $frontend['apiKey']);
+            self::assertSame('tal_prod_php', $cms['apiKey']);
+            self::assertSame('tal_prod_php', Config::toClientOptions()['apiKey']);
         });
     }
 
@@ -41,34 +41,34 @@ final class ConfigBrowserKeyTest extends TestCase
     {
         $this->clearBrowserKeyEnv();
         $this->withConfig([
-            'apiKey' => 'tal_live_php',
-            'browserApiKey' => 'tal_live_browser',
-            'dsn' => 'https://ingest.example.test',
+            'apiKey' => 'tal_prod_php',
+            'browserApiKey' => 'tal_prod_browser',
+            'url' => 'https://ingest.example.test',
         ], function (): void {
             $frontend = Config::toBrowserOptions('silverstripe-frontend');
             $cms = Config::toBrowserOptions('silverstripe-cms');
 
             self::assertIsArray($frontend);
             self::assertIsArray($cms);
-            self::assertSame('tal_live_browser', $frontend['apiKey']);
-            self::assertSame('tal_live_browser', $cms['apiKey']);
-            self::assertSame('tal_live_php', Config::toClientOptions()['apiKey']);
+            self::assertSame('tal_prod_browser', $frontend['apiKey']);
+            self::assertSame('tal_prod_browser', $cms['apiKey']);
+            self::assertSame('tal_prod_php', Config::toClientOptions()['apiKey']);
         });
     }
 
     public function testBrowserKeyFromEnvWhenYamlPlaceholderIsEmpty(): void
     {
-        $this->setBrowserKeyEnv('tal_live_from_env');
+        $this->setBrowserKeyEnv('tal_prod_from_env');
         $this->withConfig([
-            'apiKey' => 'tal_live_php',
+            'apiKey' => 'tal_prod_php',
             'browserApiKey' => '`TALARIA_BROWSER_API_KEY`',
-            'dsn' => 'https://ingest.example.test',
+            'url' => 'https://ingest.example.test',
         ], function (): void {
             $browser = Config::toBrowserOptions('silverstripe-frontend');
 
             self::assertIsArray($browser);
-            self::assertSame('tal_live_from_env', $browser['apiKey']);
-            self::assertSame('tal_live_php', Config::toClientOptions()['apiKey']);
+            self::assertSame('tal_prod_from_env', $browser['apiKey']);
+            self::assertSame('tal_prod_php', Config::toClientOptions()['apiKey']);
         });
     }
 
@@ -76,12 +76,12 @@ final class ConfigBrowserKeyTest extends TestCase
     {
         $this->clearBrowserKeyEnv();
         $this->withConfig([
-            'apiKey' => 'tal_live_php',
+            'apiKey' => 'tal_prod_php',
             'browserApiKey' => 'not-a-project-key',
-            'dsn' => 'https://ingest.example.test',
+            'url' => 'https://ingest.example.test',
         ], function (): void {
             self::assertNull(Config::toBrowserOptions('silverstripe-frontend'));
-            self::assertSame('tal_live_php', Config::toClientOptions()['apiKey']);
+            self::assertSame('tal_prod_php', Config::toClientOptions()['apiKey']);
         });
     }
 

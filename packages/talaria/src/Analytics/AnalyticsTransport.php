@@ -51,7 +51,7 @@ final class AnalyticsTransport implements AnalyticsTransportInterface
             ],
         ];
 
-        $url = rtrim($this->baseUrl, '/') . '/analytics/ingestBatch';
+        $url = rtrim($this->baseUrl, '/') . '/v1/analytics';
 
         try {
             $response = $this->http->request('POST', $url, [
@@ -73,8 +73,8 @@ final class AnalyticsTransport implements AnalyticsTransportInterface
             $parsed = IngestError::parse($body);
             $detail = self::formatErrorDetail($body, $parsed);
             $prefix = $status !== null
-                ? "Talaria analytics/ingestBatch failed: HTTP {$status}"
-                : 'Talaria analytics/ingestBatch failed: ' . $e->getMessage();
+                ? "Talaria /v1/analytics failed: HTTP {$status}"
+                : 'Talaria /v1/analytics failed: ' . $e->getMessage();
             throw new TransportException(
                 $prefix . ($detail !== '' ? " — {$detail}" : ''),
                 $status,
@@ -95,7 +95,7 @@ final class AnalyticsTransport implements AnalyticsTransportInterface
         $detail = self::formatErrorDetail($body, $parsed);
 
         throw new TransportException(
-            "Talaria analytics/ingestBatch failed: HTTP {$status}" . ($detail !== '' ? " — {$detail}" : ''),
+            "Talaria /v1/analytics failed: HTTP {$status}" . ($detail !== '' ? " — {$detail}" : ''),
             $status,
             className: $parsed->className,
             retry: $parsed->retry,

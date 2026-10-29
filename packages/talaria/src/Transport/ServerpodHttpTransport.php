@@ -45,7 +45,7 @@ final class ServerpodHttpTransport implements TransportInterface, \Talaria\Flags
             ],
         ];
 
-        $url = rtrim($this->baseUrl, '/') . '/events/ingestBatch';
+        $url = rtrim($this->baseUrl, '/') . '/v1/events';
 
         try {
             $response = $this->http->request('POST', $url, [
@@ -67,8 +67,8 @@ final class ServerpodHttpTransport implements TransportInterface, \Talaria\Flags
             $parsed = IngestError::parse($body);
             $detail = self::formatErrorDetail($body, $parsed);
             $prefix = $status !== null
-                ? "Talaria events/ingestBatch failed: HTTP {$status}"
-                : 'Talaria events/ingestBatch failed: ' . $e->getMessage();
+                ? "Talaria /v1/events failed: HTTP {$status}"
+                : 'Talaria /v1/events failed: ' . $e->getMessage();
             throw new TransportException(
                 $prefix . ($detail !== '' ? " — {$detail}" : ''),
                 $status,
@@ -89,7 +89,7 @@ final class ServerpodHttpTransport implements TransportInterface, \Talaria\Flags
         $detail = self::formatErrorDetail($body, $parsed);
 
         throw new TransportException(
-            "Talaria events/ingestBatch failed: HTTP {$status}" . ($detail !== '' ? " — {$detail}" : ''),
+            "Talaria /v1/events failed: HTTP {$status}" . ($detail !== '' ? " — {$detail}" : ''),
             $status,
             className: $parsed->className,
             retry: $parsed->retry,

@@ -27,7 +27,7 @@ final class ServerpodHttpTransportTest extends TestCase
 
         $transport = new ServerpodHttpTransport(
             'https://api.example.com/',
-            'tal_live_abc',
+            'tal_prod_abc',
             2.0,
             $http,
         );
@@ -47,7 +47,7 @@ final class ServerpodHttpTransportTest extends TestCase
         $request = $history[0]['request'];
         self::assertSame('POST', $request->getMethod());
         self::assertSame('https://api.example.com/events/ingestBatch', (string) $request->getUri());
-        self::assertSame('tal_live_abc', $request->getHeaderLine('X-API-Key'));
+        self::assertSame('tal_prod_abc', $request->getHeaderLine('X-API-Key'));
 
         /** @var array<string, mixed> $body */
         $body = json_decode((string) $request->getBody(), true, 512, JSON_THROW_ON_ERROR);
@@ -63,7 +63,7 @@ final class ServerpodHttpTransportTest extends TestCase
     {
         $mock = new MockHandler([new Response(429, [], '{"message":"quota exceeded"}')]);
         $http = new GuzzleClient(['handler' => HandlerStack::create($mock)]);
-        $transport = new ServerpodHttpTransport('https://api.example.com', 'tal_live_abc', 2.0, $http);
+        $transport = new ServerpodHttpTransport('https://api.example.com', 'tal_prod_abc', 2.0, $http);
 
         $this->expectException(TransportException::class);
         $this->expectExceptionMessage('429');
@@ -82,7 +82,7 @@ final class ServerpodHttpTransportTest extends TestCase
             ], JSON_THROW_ON_ERROR)),
         ]);
         $http = new GuzzleClient(['handler' => HandlerStack::create($mock)]);
-        $transport = new ServerpodHttpTransport('https://api.example.com', 'tal_live_abc', 2.0, $http);
+        $transport = new ServerpodHttpTransport('https://api.example.com', 'tal_prod_abc', 2.0, $http);
 
         try {
             $transport->sendBatch([

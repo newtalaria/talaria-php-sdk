@@ -15,8 +15,8 @@ final class FlagsTest extends TestCase
     public function testRespectsFlagsEnabledPolicy(): void
     {
         $config = new Config([
-            'dsn' => 'https://example.test',
-            'apiKey' => 'tal_live_testkey',
+            'url' => 'https://example.test',
+            'apiKey' => 'tal_prod_testkey',
         ]);
         $config->enableFlags = false;
         $flags = new Flags($config, new Identity(anonymousId: 'a1'), static fn () => null);
@@ -29,8 +29,8 @@ final class FlagsTest extends TestCase
     public function testRemoteEvaluateCachesAndStamps(): void
     {
         $config = new Config([
-            'dsn' => 'https://example.test',
-            'apiKey' => 'tal_live_testkey',
+            'url' => 'https://example.test',
+            'apiKey' => 'tal_prod_testkey',
         ]);
         $config->enableFlags = true;
 
@@ -81,8 +81,8 @@ final class FlagsTest extends TestCase
     public function testLoadDefinitionsSwitchesToLocalMode(): void
     {
         $config = new Config([
-            'dsn' => 'https://example.test',
-            'apiKey' => 'tal_live_testkey',
+            'url' => 'https://example.test',
+            'apiKey' => 'tal_prod_testkey',
         ]);
         $config->enableFlags = true;
 
@@ -133,8 +133,8 @@ final class FlagsTest extends TestCase
     public function testApplySdkDocumentEnablesFlags(): void
     {
         $config = new Config([
-            'dsn' => 'https://example.test',
-            'apiKey' => 'tal_live_testkey',
+            'url' => 'https://example.test',
+            'apiKey' => 'tal_prod_testkey',
         ]);
         self::assertFalse($config->enableFlags);
         $config->applySdkDocument([

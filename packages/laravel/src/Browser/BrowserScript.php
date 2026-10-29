@@ -28,16 +28,16 @@ final class BrowserScript
         if ($apiKey === '') {
             $apiKey = $this->stringConfig('talaria.api_key');
         }
-        if (!str_starts_with($apiKey, 'tal_live_')) {
+        if (!preg_match('/^tal_(prod|stg|test|dev)_/', $apiKey)) {
             return null;
         }
 
-        $dsn = $this->stringConfig('talaria.browser_dsn');
-        if ($dsn === '') {
-            $dsn = $this->stringConfig('talaria.dsn');
+        $url = $this->stringConfig('talaria.browser_url');
+        if ($url === '') {
+            $url = $this->stringConfig('talaria.url');
         }
-        $dsn = rtrim($dsn, '/');
-        if ($dsn === '') {
+        $url = rtrim($url, '/');
+        if ($url === '') {
             return null;
         }
 
@@ -47,7 +47,7 @@ final class BrowserScript
         }
 
         $options = [
-            'dsn' => $dsn,
+            'url' => $url,
             'apiKey' => $apiKey,
             'publicAnalytics' => true,
             'tags' => [

@@ -12,8 +12,8 @@ use Talaria\Config as SdkConfig;
  *
  * Prefer environment variables:
  * - TALARIA_API_KEY
- * - TALARIA_DSN (optional; defaults to https://ingest.newtalaria.com)
- * - TALARIA_BROWSER_DSN (optional; browser inject only — use when PHP DSN is not browser-reachable, e.g. http://host.docker.internal behind an HTTPS site)
+ * - TALARIA_URL (optional; defaults to https://ingest.newtalaria.com)
+ * - TALARIA_BROWSER_URL (optional; browser inject only — use when PHP URL is not browser-reachable, e.g. http://host.docker.internal behind an HTTPS site)
  * - TALARIA_BROWSER_API_KEY (optional; browser inject only — CMS and public pages use this project; PHP keeps TALARIA_API_KEY)
  * - TALARIA_RELEASE (optional)
  * - TALARIA_COMMIT_SHA (optional)
@@ -22,7 +22,7 @@ class Config
 {
     use Configurable;
 
-    private const DEFAULT_DSN = 'https://ingest.newtalaria.com';
+    private const DEFAULT_URL = 'https://ingest.newtalaria.com';
 
     /**
      * @return array<string, mixed>
@@ -31,17 +31,17 @@ class Config
     {
         $cfg = static::config();
 
-        $dsn = self::resolveString($cfg->get('dsn') ?? '');
+        $url = self::resolveString($cfg->get('url') ?? '');
         $apiKey = self::resolveString($cfg->get('apiKey') ?? '');
         $release = self::resolveString($cfg->get('release') ?? '');
         $commitSha = self::resolveString($cfg->get('commitSha') ?? '');
         $service = self::resolveString($cfg->get('service') ?? '');
 
-        if ($dsn === '') {
-            $dsn = self::env('TALARIA_DSN');
+        if ($url === '') {
+            $url = self::env('TALARIA_URL');
         }
-        if ($dsn === '') {
-            $dsn = self::DEFAULT_DSN;
+        if ($url === '') {
+            $url = self::DEFAULT_URL;
         }
         if ($apiKey === '') {
             $apiKey = self::env('TALARIA_API_KEY');
@@ -54,7 +54,7 @@ class Config
         }
 
         $options = [
-            'dsn' => $dsn,
+            'url' => $url,
             'apiKey' => $apiKey,
             'maxBatchSize' => (int) ($cfg->get('maxBatchSize') ?? 50),
             'flushIntervalMs' => (int) ($cfg->get('flushIntervalMs') ?? 2000),
@@ -108,10 +108,10 @@ class Config
     public static function toBrowserOptions(string $runtimeTag, array $extraTags = []): ?array
     {
         $options = self::toClientOptions();
-        $dsn = self::resolveBrowserDsn($options);
+        $url = self::resolveBrowserUrl($options);
         $apiKey = self::resolveBrowserApiKey($options);
 
-        if ($dsn === '' || $apiKey === '' || !str_starts_with($apiKey, 'tal_live_')) {
+        if ($url === '' || $apiKey === '' || !preg_match('/^tal_(prod|stg|test|dev)_/', $apiKey)) {
             return null;
         }
 
@@ -142,7 +142,7 @@ class Config
         }
 
         $browser = [
-            'dsn' => $dsn,
+            'url' => $url,
             'apiKey' => $apiKey,
             'minLevel' => self::minLevel(),
             'enforceDefaultLevel' => self::enforceDefaultLevel(),
@@ -176,30 +176,30 @@ class Config
     }
 
     /**
-     * Browser DSN: YAML/env `browserDsn` / TALARIA_BROWSER_DSN, else PHP client DSN.
+     * Browser URL: YAML/env `browserUrl` / TALARIA_BROWSER_URL, else PHP client URL.
      *
      * @param array<string, mixed> $clientOptions
      */
-    private static function resolveBrowserDsn(array $clientOptions): string
+    private static function resolveBrowserUrl(array $clientOptions): string
     {
-        $browserDsn = self::resolveString(static::config()->get('browserDsn') ?? '');
-        if ($browserDsn === '') {
-            $browserDsn = self::env('TALARIA_BROWSER_DSN');
+        $browserUrl = self::resolveString(static::config()->get('browserUrl') ?? '');
+        if ($browserUrl === '') {
+            $browserUrl = self::env('TALARIA_BROWSER_URL');
         }
-        if ($browserDsn !== '') {
-            return rtrim($browserDsn, '/');
+        if ($browserUrl !== '') {
+            return rtrim($browserUrl, '/');
         }
 
-        $dsn = is_string($clientOptions['dsn'] ?? null) ? $clientOptions['dsn'] : '';
+        $url = is_string($clientOptions['url'] ?? null) ? $clientOptions['url'] : '';
 
-        return $dsn !== '' ? rtrim($dsn, '/') : '';
+        return $url !== '' ? rtrim($url, '/') : '';
     }
 
     /**
      * Browser API key: YAML/env `browserApiKey` / TALARIA_BROWSER_API_KEY, else the PHP key.
      *
      * A non-empty value sends CMS and public-page browser traffic to that project.
-     * An empty value keeps the PHP project key. A value that is not a `tal_live_` key
+     * An empty value keeps the PHP project key. A value that is not a tal_prod_/tal_stg_/tal_test_/tal_dev_ key
      * disables browser inject.
      *
      * @param array<string, mixed> $clientOptions
@@ -463,7 +463,7 @@ class Config
             return '';
         }
 
-        // Silverstripe env placeholder style: `TALARIA_DSN`
+        // Silverstripe env placeholder style: `TALARIA_URL`
         if (preg_match('/^`([A-Z0-9_]+)`$/', $value, $matches) === 1) {
             return self::env($matches[1]);
         }
