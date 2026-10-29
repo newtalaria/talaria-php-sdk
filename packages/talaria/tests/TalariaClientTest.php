@@ -199,7 +199,7 @@ final class TalariaClientTest extends TestCase
     {
         $transport = new FakeTransport();
         $transport->failWith = new \Talaria\Exception\TransportException(
-            'Talaria events/ingestBatch failed: HTTP 400',
+            'Talaria /v1/events failed: HTTP 400',
             400,
             className: 'ApiUnauthorizedException',
             retry: false,
@@ -226,7 +226,7 @@ final class TalariaClientTest extends TestCase
     {
         $transport = new FakeTransport();
         $transport->failWith = new \Talaria\Exception\TransportException(
-            'Talaria events/ingestBatch failed: HTTP 400',
+            'Talaria /v1/events failed: HTTP 400',
             400,
             className: 'ApiConflictException',
             retry: true,
@@ -251,7 +251,7 @@ final class TalariaClientTest extends TestCase
     {
         $transport = new FakeTransport();
         $transport->failWith = new \Talaria\Exception\TransportException(
-            'Talaria events/ingestBatch failed: HTTP 503',
+            'Talaria /v1/events failed: HTTP 503',
             503,
         );
         $client = new TalariaClient([
@@ -272,7 +272,7 @@ final class TalariaClientTest extends TestCase
     {
         $transport = new FakeTransport();
         $transport->failWith = new \Talaria\Exception\TransportException(
-            'Talaria events/ingestBatch failed: HTTP 400',
+            'Talaria /v1/events failed: HTTP 400',
             400,
             className: 'ApiUnauthorizedException',
             retry: false,

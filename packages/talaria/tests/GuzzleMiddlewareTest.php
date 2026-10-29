@@ -69,7 +69,7 @@ final class GuzzleMiddlewareTest extends TestCase
 
         $root = $client->startTransaction('GET /page', SpanKind::Server);
         $http = new GuzzleClient(['handler' => $stack]);
-        $http->send(new Request('POST', 'https://api.example.com/spans/ingestBatch'));
+        $http->send(new Request('POST', 'https://api.example.com/v1/spans'));
         $root->end();
         $client->flush();
 

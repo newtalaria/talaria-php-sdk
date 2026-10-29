@@ -207,7 +207,7 @@ final class AnalyticsTest extends TestCase
     {
         $analytics = new FakeAnalyticsTransport();
         $analytics->failWith = new TransportException(
-            'Talaria analytics/ingestBatch failed: HTTP 400',
+            'Talaria /v1/analytics failed: HTTP 400',
             400,
             className: 'ApiUnauthorizedException',
             retry: false,
@@ -232,7 +232,7 @@ final class AnalyticsTest extends TestCase
     {
         $events = new FakeTransport();
         $events->failWith = new TransportException(
-            'Talaria events/ingestBatch failed: HTTP 400',
+            'Talaria /v1/events failed: HTTP 400',
             400,
             className: 'ApiUnauthorizedException',
             retry: false,
@@ -324,7 +324,7 @@ final class AnalyticsTest extends TestCase
         self::assertCount(1, $history);
         $request = $history[0]['request'];
         self::assertSame('POST', $request->getMethod());
-        self::assertSame('https://api.example.com/analytics/ingestBatch', (string) $request->getUri());
+        self::assertSame('https://api.example.com/v1/analytics', (string) $request->getUri());
         self::assertSame('tal_prod_abc', $request->getHeaderLine('X-API-Key'));
 
         /** @var array<string, mixed> $body */
