@@ -9,7 +9,7 @@ use Talaria\Event;
 interface TransportInterface
 {
     /**
-     * Send a batch of events via events/ingestBatch.
+     * Send a batch of events via /v1/events.
      *
      * @param list<Event> $events
      */

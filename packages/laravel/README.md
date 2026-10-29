@@ -15,18 +15,19 @@ PHP 8.1+ and Laravel 10, 11, or 12.
 composer require talaria/laravel
 ```
 
-The published config defaults the DSN to `https://ingest.newtalaria.com`. Set the API key:
+Set a secret key. Leave `TALARIA_URL` empty to use `https://ingest-<cell>.newtalaria.com` from that key:
 
 ```env
-TALARIA_API_KEY=tal_live_…
+TALARIA_API_KEY=tal_sk_prod_nz1_…
+TALARIA_BROWSER_API_KEY=tal_pk_prod_nz1_…
 TALARIA_RELEASE=1.4.2
 ```
 
 `TALARIA_RELEASE` is optional. In GitHub Actions or GitLab the SDK sends `<ref>@<shortsha>` when it is unset. See [Releases](https://www.newtalaria.com/docs/guides/releases).
 
-The API key decides the environment. Do not call `Talaria::init()` yourself. Tracing and analytics follow Project settings.
+Do not call `Talaria::init()` yourself. Tracing and analytics follow Project settings. A malformed key fails fast. An empty key leaves the client disabled.
 
-HTML responses on the `web` middleware group load `@newtalaria/browser` from jsDelivr (`TALARIA_BROWSER_SDK_VERSION`, default `0.5.3`). Replay, heatmaps, and web vitals start only when the project allows them. Set `TALARIA_BROWSER=false` to skip the script. `TALARIA_BROWSER_DSN` and `TALARIA_BROWSER_API_KEY` override the PHP DSN and key for the browser only.
+HTML responses on the `web` middleware group load `@newtalaria/browser` from jsDelivr (`TALARIA_BROWSER_SDK_VERSION`, default `0.5.3`). Replay, heatmaps, and web vitals start only when the project allows them. Set `TALARIA_BROWSER=false` to skip the script. The injected key is `browser_api_key` (`TALARIA_BROWSER_API_KEY`) and must be a `tal_pk_` key. The server `tal_sk_` key is not injected.
 
 ## License
 

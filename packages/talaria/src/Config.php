@@ -9,7 +9,7 @@ namespace Talaria;
  */
 final class Config
 {
-    public readonly string $baseUrl;
+    public readonly string $url;
     public readonly string $apiKey;
     public readonly ?string $release;
     public readonly ?string $commitSha;
@@ -68,8 +68,7 @@ final class Config
 
     /**
      * @param array{
-     *   dsn?: string,
-     *   baseUrl?: string,
+     *   url?: string,
      *   apiKey: string,
      *   release?: string|null,
      *   commitSha?: string|null,
@@ -95,21 +94,25 @@ final class Config
      */
     public function __construct(array $options)
     {
-        $baseUrl = $options['dsn'] ?? $options['baseUrl'] ?? null;
-        if (!is_string($baseUrl) || trim($baseUrl) === '') {
-            throw new \InvalidArgumentException('Talaria init requires dsn or baseUrl.');
-        }
-
         $apiKey = $options['apiKey'] ?? '';
         if (!is_string($apiKey) || trim($apiKey) === '') {
             throw new \InvalidArgumentException('Talaria init requires apiKey.');
         }
-        if (!str_starts_with($apiKey, 'tal_live_')) {
-            throw new \InvalidArgumentException('Talaria apiKey must start with tal_live_.');
+        $credential = Credential::parseApiKey($apiKey);
+        if ($credential->isPublishable()) {
+            Credential::warnPublishableOnce();
         }
 
-        $this->baseUrl = rtrim($baseUrl, '/');
-        $this->apiKey = trim($apiKey);
+        $url = $options['url'] ?? null;
+        if (!is_string($url) || trim($url) === '') {
+            $url = self::getEnv('TALARIA_URL') ?? '';
+        }
+        if (trim($url) === '') {
+            $url = $credential->ingestUrl();
+        }
+
+        $this->url = rtrim($url, '/');
+        $this->apiKey = $credential->value;
         $identity = ReleaseIdentity::resolve(
             isset($options['release']) && is_string($options['release']) ? $options['release'] : null,
             isset($options['commitSha']) && is_string($options['commitSha']) ? $options['commitSha'] : null,
@@ -131,7 +134,11 @@ final class Config
         $this->sessionId = isset($options['sessionId']) && is_string($options['sessionId']) && $options['sessionId'] !== ''
             ? $options['sessionId']
             : null;
-        $this->tags = self::normalizeTags($options['tags'] ?? []);
+        
+        $otelTags = self::parseOtelResourceAttributes();
+        $configTags = self::normalizeTags($options['tags'] ?? []);
+        $this->tags = array_merge($otelTags, $configTags);
+        
         $this->httpTimeoutSeconds = max(0.5, (float) ($options['httpTimeoutSeconds'] ?? 3.0));
 
         $minLevelRaw = $options['minLevel'] ?? SeverityLevel::Debug;
@@ -267,5 +274,53 @@ final class Config
         }
 
         return $tags;
+    }
+
+    /**
+     * Parse OTEL_RESOURCE_ATTRIBUTES and OTEL_SERVICE_NAME per OTel env spec.
+     * Precedence: TALARIA_* > OTEL_* > default.
+     *
+     * @return array<string, string>
+     */
+    private static function parseOtelResourceAttributes(): array
+    {
+        $tags = [];
+
+        // OTEL_SERVICE_NAME has lower priority than TALARIA_SERVICE_NAME
+        $otelServiceName = self::getEnv('OTEL_SERVICE_NAME');
+        if ($otelServiceName !== null && $otelServiceName !== '') {
+            $tags['service.name'] = $otelServiceName;
+        }
+
+        // Parse OTEL_RESOURCE_ATTRIBUTES (key=value,key=value format)
+        $resourceAttrs = self::getEnv('OTEL_RESOURCE_ATTRIBUTES');
+        if ($resourceAttrs !== null && $resourceAttrs !== '') {
+            $pairs = explode(',', $resourceAttrs);
+            foreach ($pairs as $pair) {
+                $pair = trim($pair);
+                if ($pair === '') {
+                    continue;
+                }
+                $parts = explode('=', $pair, 2);
+                if (count($parts) === 2) {
+                    $key = trim($parts[0]);
+                    $value = trim($parts[1]);
+                    if ($key !== '' && $value !== '') {
+                        $tags[$key] = $value;
+                    }
+                }
+            }
+        }
+
+        return $tags;
+    }
+
+    /**
+     * Get environment variable with fallback chain.
+     */
+    private static function getEnv(string $key): ?string
+    {
+        $value = $_SERVER[$key] ?? $_ENV[$key] ?? getenv($key);
+        return is_string($value) && $value !== '' ? $value : null;
     }
 }

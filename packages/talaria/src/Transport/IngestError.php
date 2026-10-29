@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Talaria\Transport;
 
 /**
- * Classification of a Talaria ingest HTTP error body.
+ * RFC 9457 problem+json body from a Talaria /v1 response.
  */
 final class IngestError
 {
@@ -13,6 +13,11 @@ final class IngestError
         public readonly ?string $className = null,
         public readonly ?string $message = null,
         public readonly ?bool $retry = null,
+        public readonly ?string $code = null,
+        public readonly ?int $status = null,
+        public readonly ?string $requestId = null,
+        public readonly ?string $cell = null,
+        public readonly ?string $redirectUrl = null,
     ) {
     }
 
@@ -27,12 +32,20 @@ final class IngestError
         if (!is_array($decoded)) {
             return new self();
         }
-        $nested = is_array($decoded['data'] ?? null) ? $decoded['data'] : [];
+
+        $code = self::stringOf($decoded['code'] ?? null);
+        $status = is_int($decoded['status'] ?? null) ? $decoded['status'] : null;
+        $detail = self::stringOf($decoded['detail'] ?? $decoded['title'] ?? null);
+        $retry = self::retryOf($code, $status);
 
         return new self(
-            className: self::stringOf($decoded['__className__'] ?? $decoded['className'] ?? $decoded['exception'] ?? ($nested['__className__'] ?? null)),
-            message: self::stringOf($decoded['message'] ?? ($nested['message'] ?? null)),
-            retry: self::boolOf($decoded['retry'] ?? ($nested['retry'] ?? null)),
+            message: $detail,
+            retry: $retry,
+            code: $code,
+            status: $status,
+            requestId: self::stringOf($decoded['requestId'] ?? null),
+            cell: self::stringOf($decoded['cell'] ?? null),
+            redirectUrl: self::stringOf($decoded['url'] ?? null),
         );
     }
 
@@ -41,20 +54,16 @@ final class IngestError
         if ($this->retry === true) {
             return false;
         }
-        if ($this->retry === false) {
+        if ($this->code === 'quota_exceeded' || $this->code === 'rate_limited') {
+            return false;
+        }
+        if ($this->status !== null && ($this->status === 429 || $this->status >= 500)) {
+            return false;
+        }
+        if ($this->retry === false || $this->code !== null) {
             return true;
         }
-        $name = $this->className ?? '';
-        if (str_contains($name, 'ApiUnauthorizedException')) {
-            return true;
-        }
-        if (str_contains($name, 'ApiDisallowedDomainException')) {
-            return true;
-        }
-        if (str_contains($name, 'ApiNotFoundException')) {
-            return true;
-        }
-        if (str_contains($name, 'ApiConflictException') && str_contains(strtolower((string) $this->message), 'not active')) {
+        if ($this->status !== null && $this->status >= 400) {
             return true;
         }
 
@@ -63,23 +72,12 @@ final class IngestError
 
     public function isScopeOnly(): bool
     {
-        return str_contains(strtolower((string) $this->message), 'lacks required scope');
+        return $this->code === 'insufficient_scope';
     }
 
     public function isGlobalCredentialFailure(): bool
     {
-        $name = $this->className ?? '';
-        if (str_contains($name, 'ApiUnauthorizedException')) {
-            return true;
-        }
-        if (str_contains($name, 'ApiDisallowedDomainException')) {
-            return true;
-        }
-        if (str_contains($name, 'ApiNotFoundException')) {
-            return true;
-        }
-
-        return false;
+        return $this->code === 'invalid_key' || $this->code === 'not_found';
     }
 
     public function disabledSignal(): ?string
@@ -101,6 +99,27 @@ final class IngestError
         return null;
     }
 
+    private static function retryOf(?string $code, ?int $status): ?bool
+    {
+        if ($code === 'quota_exceeded' || $code === 'rate_limited') {
+            return true;
+        }
+        if ($code !== null) {
+            return false;
+        }
+        if ($status === null) {
+            return null;
+        }
+        if ($status === 429 || $status >= 500) {
+            return true;
+        }
+        if ($status >= 400) {
+            return false;
+        }
+
+        return null;
+    }
+
     private static function stringOf(mixed $value): ?string
     {
         if (!is_string($value)) {
@@ -109,21 +128,5 @@ final class IngestError
         $trimmed = trim($value);
 
         return $trimmed === '' ? null : $trimmed;
-    }
-
-    private static function boolOf(mixed $value): ?bool
-    {
-        if (is_bool($value)) {
-            return $value;
-        }
-        if (is_string($value)) {
-            return match (strtolower(trim($value))) {
-                'true', '1' => true,
-                'false', '0' => false,
-                default => null,
-            };
-        }
-
-        return null;
     }
 }

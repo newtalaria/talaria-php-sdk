@@ -22,7 +22,7 @@ if [ ! -f .env ]; then
 fi
 {
   echo ""
-  echo "TALARIA_DSN=http://127.0.0.1:8080"
+  echo "TALARIA_URL=http://127.0.0.1:8080"
   echo "TALARIA_API_KEY="
   echo "TALARIA_ENABLE_TRACING=true"
 } >> .env

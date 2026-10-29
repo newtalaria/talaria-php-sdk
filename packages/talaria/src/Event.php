@@ -49,7 +49,6 @@ final class Event
     public function toWire(): array
     {
         $wire = [
-            '__className__' => 'IngestEventInput',
             'message' => $this->message,
             'level' => $this->level->value,
             'eventType' => $this->eventType ?? $this->level->toEventType(),

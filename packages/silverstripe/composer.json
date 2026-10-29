@@ -26,7 +26,7 @@
     "php": "^8.1",
     "monolog/monolog": "^1.25 || ^3.0",
     "silverstripe/framework": "^4.13 || ^5 || ^6",
-    "silverstripe/vendor-plugin": "^1.0 || ^2.0",
+    "silverstripe/vendor-plugin": "^1.0 || ^2.0 || ^3.0",
     "talaria/talaria": "^2.1.0"
   },
   "require-dev": {

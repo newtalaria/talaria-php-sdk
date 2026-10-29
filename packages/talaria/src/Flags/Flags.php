@@ -10,9 +10,9 @@ use Talaria\Identity;
 /**
  * Feature-flag client for PHP request lifecycle.
  *
- * Default path: remote `POST /flags/evaluate` with in-process cache for the
- * current request. Call {@see loadDefinitions()} (API key scope
- * `flags:definitions`) to switch to local evaluation — preferred for
+ * Default path: remote `POST /v1/flags/evaluate` with in-process cache for the
+ * current request. Call {@see loadDefinitions()} (secret key, scope
+ * `flags:read`) to switch to local evaluation — preferred for
  * Silverstripe / Laravel workers that cannot afford per-request RTT.
  *
  * Poll / TTL: {@see maybeRefresh()} re-fetches after {@see $pollIntervalSeconds}
@@ -140,7 +140,7 @@ final class Flags
 
     /**
      * Download definitions and switch to local evaluation.
-     * Requires API key scope `flags:definitions` (server/backend keys only).
+     * Requires a secret key with scope `flags:read`.
      *
      * @param list<string>|null $keys
      */
@@ -153,13 +153,10 @@ final class Flags
         if ($transport === null) {
             throw new \RuntimeException('Talaria flags transport unavailable');
         }
-        $input = ['__className__' => 'DownloadFlagDefinitionsInput'];
-        if ($keys !== null && $keys !== []) {
-            $input['keys'] = array_values($keys);
-        }
-        $raw = $transport->postJson('flags/downloadDefinitions', [
-            'input' => $input,
-        ], max(0.5, $this->config->httpTimeoutSeconds));
+        $raw = $transport->getJson(
+            self::definitionsPath($keys),
+            max(0.5, $this->config->httpTimeoutSeconds),
+        );
         $this->definitions = $this->parseDefinitions($raw);
         $this->localMode = true;
         $this->applyLocalEvaluations();
@@ -300,8 +297,8 @@ final class Flags
             return;
         }
         $input = [
-            '__className__' => 'EvaluateFlagsInput',
             'anonymousId' => $this->identity->anonymousId,
+            'sessionId' => $this->identity->sessionId,
         ];
         $userId = $this->effectiveUserId();
         if ($userId !== null) {
@@ -313,9 +310,7 @@ final class Flags
         if ($this->attributes !== []) {
             $input['attributes'] = $this->attributes;
         }
-        $raw = $transport->postJson('flags/evaluate', [
-            'input' => $input,
-        ], max(0.5, $this->config->httpTimeoutSeconds));
+        $raw = $transport->postJson('v1/flags/evaluate', $input, max(0.5, $this->config->httpTimeoutSeconds));
         $this->evaluations = $this->parseEvaluations($raw);
         $this->lastFetchedAt = time();
     }
@@ -325,9 +320,10 @@ final class Flags
         $transport = ($this->transport)();
         if ($transport !== null) {
             try {
-                $raw = $transport->postJson('flags/downloadDefinitions', [
-                    'input' => ['__className__' => 'DownloadFlagDefinitionsInput'],
-                ], max(0.5, $this->config->httpTimeoutSeconds));
+                $raw = $transport->getJson(
+                    self::definitionsPath(null),
+                    max(0.5, $this->config->httpTimeoutSeconds),
+                );
                 $defs = $this->parseDefinitions($raw);
                 if ($defs !== []) {
                     $this->definitions = $defs;
@@ -419,6 +415,22 @@ final class Flags
         }
 
         return $out;
+    }
+
+    /**
+     * @param list<string>|null $keys
+     */
+    private static function definitionsPath(?array $keys): string
+    {
+        if ($keys === null || $keys === []) {
+            return 'v1/flags';
+        }
+        $query = [];
+        foreach ($keys as $key) {
+            $query[] = 'keys=' . rawurlencode($key);
+        }
+
+        return 'v1/flags?' . implode('&', $query);
     }
 
     private function effectiveUserId(): ?string

@@ -163,8 +163,8 @@ final class ExceptionDedupeTest extends TestCase
     private function client(FakeTransport $transport): TalariaClient
     {
         return new TalariaClient([
-            'dsn' => 'https://api.example.com',
-            'apiKey' => 'tal_live_testkeytestkeytestkeytestkey123456',
+            'url' => 'https://api.example.com',
+            'apiKey' => \Talaria\Credential::example(),
             'defaultIntegrations' => false,
             'maxBatchSize' => 1,
             'flushIntervalMs' => 60_000,

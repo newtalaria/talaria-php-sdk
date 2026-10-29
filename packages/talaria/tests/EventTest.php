@@ -26,7 +26,6 @@ final class EventTest extends TestCase
             extraJson: '{"cart_id":"abc"}',
             timestamp: '2026-07-19T10:00:00.000Z',
             exception: [
-                '__className__' => 'ExceptionDataDto',
                 'values' => [],
             ],
             platform: 'php',
@@ -36,7 +35,7 @@ final class EventTest extends TestCase
 
         $wire = $event->toWire();
 
-        self::assertSame('IngestEventInput', $wire['__className__']);
+        self::assertArrayNotHasKey('__className__', $wire);
         self::assertSame('Payment failed', $wire['message']);
         self::assertArrayNotHasKey('environment', $wire);
         self::assertSame('error', $wire['level']);
@@ -54,7 +53,7 @@ final class EventTest extends TestCase
         self::assertSame('2026-07-19T10:00:00.000Z', $wire['timestamp']);
         self::assertSame('php', $wire['platform']);
         self::assertSame('Instagram 192.168.1.2.1 (iPhone)', $wire['userAgent']);
-        self::assertSame('ExceptionDataDto', $wire['exception']['__className__']);
+        self::assertSame([], $wire['exception']['values']);
         self::assertArrayNotHasKey('stack_trace', $wire);
     }
 

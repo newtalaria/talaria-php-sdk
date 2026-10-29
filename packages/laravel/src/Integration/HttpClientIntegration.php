@@ -29,7 +29,7 @@ final class HttpClientIntegration
             && method_exists(\Illuminate\Support\Facades\Http::class, 'globalRequestMiddleware')) {
             \Illuminate\Support\Facades\Http::globalRequestMiddleware(function ($request) {
                 $url = method_exists($request, 'url') ? (string) $request->url() : '';
-                if (str_contains($url, '/events/ingestBatch') || str_contains($url, '/spans/ingestBatch')) {
+                if (str_contains($url, '/v1/events') || str_contains($url, '/v1/spans') || str_contains($url, '/v1/analytics')) {
                     return $request;
                 }
                 $traceparent = $this->client->getTraceparent();
@@ -44,7 +44,7 @@ final class HttpClientIntegration
         Event::listen(RequestSending::class, function (RequestSending $event): void {
             $request = $event->request;
             $url = (string) $request->url();
-            if (str_contains($url, '/events/ingestBatch') || str_contains($url, '/spans/ingestBatch')) {
+            if (str_contains($url, '/v1/events') || str_contains($url, '/v1/spans') || str_contains($url, '/v1/analytics')) {
                 return;
             }
 

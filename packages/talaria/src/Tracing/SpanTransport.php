@@ -11,7 +11,7 @@ use Talaria\Exception\TransportException;
 use Talaria\Transport\IngestError;
 
 /**
- * Minimal Serverpod RPC client for spans/ingestBatch.
+ * HTTP transport for /v1/spans batch ingest.
  *
  * Uses a dedicated Guzzle client — never the app HTTP stack — so ingest is
  * not recorded as a child span of the traced request.
@@ -42,20 +42,14 @@ final class SpanTransport implements SpanTransportInterface
         }
 
         $payload = [
-            'input' => [
-                '__className__' => 'IngestSpanBatchInput',
-                'spans' => array_map(static fn (Span $span) => $span->toWire(), $spans),
-            ],
+            'spans' => array_map(static fn (Span $span) => $span->toWire(), $spans),
         ];
 
-        $url = rtrim($this->baseUrl, '/') . '/spans/ingestBatch';
+        $url = rtrim($this->baseUrl, '/') . '/v1/spans';
 
         try {
             $response = $this->http->request('POST', $url, [
-                'headers' => [
-                    'Content-Type' => 'application/json; charset=utf-8',
-                    'X-API-Key' => $this->apiKey,
-                ],
+                'headers' => \Talaria\Transport\Bearer::headers($this->apiKey),
                 'json' => $payload,
                 'timeout' => $this->timeoutSeconds,
             ]);
@@ -70,15 +64,16 @@ final class SpanTransport implements SpanTransportInterface
             $parsed = IngestError::parse($body);
             $detail = self::formatErrorDetail($body, $parsed);
             $prefix = $status !== null
-                ? "Talaria spans/ingestBatch failed: HTTP {$status}"
-                : 'Talaria spans/ingestBatch failed: ' . $e->getMessage();
+                ? "Talaria /v1/spans failed: HTTP {$status}"
+                : 'Talaria /v1/spans failed: ' . $e->getMessage();
             throw new TransportException(
                 $prefix . ($detail !== '' ? " — {$detail}" : ''),
                 $status,
                 previous: $e,
-                className: $parsed->className,
                 retry: $parsed->retry,
                 bodyMessage: $parsed->message,
+                problemCode: $parsed->code,
+                requestId: $parsed->requestId,
             );
         }
 
@@ -92,18 +87,19 @@ final class SpanTransport implements SpanTransportInterface
         $detail = self::formatErrorDetail($body, $parsed);
 
         throw new TransportException(
-            "Talaria spans/ingestBatch failed: HTTP {$status}" . ($detail !== '' ? " — {$detail}" : ''),
+            "Talaria /v1/spans failed: HTTP {$status}" . ($detail !== '' ? " — {$detail}" : ''),
             $status,
-            className: $parsed->className,
             retry: $parsed->retry,
             bodyMessage: $parsed->message,
+            problemCode: $parsed->code,
+            requestId: $parsed->requestId,
         );
     }
 
     private static function formatErrorDetail(string $body, IngestError $parsed): string
     {
         $parts = array_filter([
-            $parsed->className,
+            $parsed->code,
             $parsed->message,
         ]);
         if ($parts !== []) {

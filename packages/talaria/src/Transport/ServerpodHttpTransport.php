@@ -11,7 +11,7 @@ use Talaria\Event;
 use Talaria\Exception\TransportException;
 
 /**
- * Minimal Serverpod RPC client for events/ingestBatch.
+ * HTTP transport for /v1/events batch ingest.
  */
 final class ServerpodHttpTransport implements TransportInterface, \Talaria\Flags\FlagsHttpClient
 {
@@ -39,20 +39,14 @@ final class ServerpodHttpTransport implements TransportInterface, \Talaria\Flags
         }
 
         $payload = [
-            'input' => [
-                '__className__' => 'IngestEventBatchInput',
-                'events' => array_map(static fn (Event $event) => $event->toWire(), $events),
-            ],
+            'events' => array_map(static fn (Event $event) => $event->toWire(), $events),
         ];
 
-        $url = rtrim($this->baseUrl, '/') . '/events/ingestBatch';
+        $url = rtrim($this->baseUrl, '/') . '/v1/events';
 
         try {
             $response = $this->http->request('POST', $url, [
-                'headers' => [
-                    'Content-Type' => 'application/json; charset=utf-8',
-                    'X-API-Key' => $this->apiKey,
-                ],
+                'headers' => Bearer::headers($this->apiKey),
                 'json' => $payload,
                 'timeout' => $this->timeoutSeconds,
             ]);
@@ -67,15 +61,16 @@ final class ServerpodHttpTransport implements TransportInterface, \Talaria\Flags
             $parsed = IngestError::parse($body);
             $detail = self::formatErrorDetail($body, $parsed);
             $prefix = $status !== null
-                ? "Talaria events/ingestBatch failed: HTTP {$status}"
-                : 'Talaria events/ingestBatch failed: ' . $e->getMessage();
+                ? "Talaria /v1/events failed: HTTP {$status}"
+                : 'Talaria /v1/events failed: ' . $e->getMessage();
             throw new TransportException(
                 $prefix . ($detail !== '' ? " — {$detail}" : ''),
                 $status,
                 previous: $e,
-                className: $parsed->className,
                 retry: $parsed->retry,
                 bodyMessage: $parsed->message,
+                problemCode: $parsed->code,
+                requestId: $parsed->requestId,
             );
         }
 
@@ -89,11 +84,12 @@ final class ServerpodHttpTransport implements TransportInterface, \Talaria\Flags
         $detail = self::formatErrorDetail($body, $parsed);
 
         throw new TransportException(
-            "Talaria events/ingestBatch failed: HTTP {$status}" . ($detail !== '' ? " — {$detail}" : ''),
+            "Talaria /v1/events failed: HTTP {$status}" . ($detail !== '' ? " — {$detail}" : ''),
             $status,
-            className: $parsed->className,
             retry: $parsed->retry,
             bodyMessage: $parsed->message,
+            problemCode: $parsed->code,
+            requestId: $parsed->requestId,
         );
     }
 
@@ -105,23 +101,55 @@ final class ServerpodHttpTransport implements TransportInterface, \Talaria\Flags
     {
         $url = rtrim($this->baseUrl, '/') . '/' . ltrim($path, '/');
         $response = $this->http->request('POST', $url, [
-            'headers' => [
-                'Content-Type' => 'application/json; charset=utf-8',
-                'X-API-Key' => $this->apiKey,
-            ],
+            'headers' => Bearer::headers($this->apiKey),
             'json' => $json,
             'timeout' => $timeoutSeconds,
         ]);
-        $status = $response->getStatusCode();
-        $raw = (string) $response->getBody();
+
+        return $this->decode($path, $response->getStatusCode(), (string) $response->getBody());
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function getJson(string $path, float $timeoutSeconds = 0.2): array
+    {
+        $url = rtrim($this->baseUrl, '/') . '/' . ltrim($path, '/');
+        $response = $this->http->request('GET', $url, [
+            'headers' => [
+                'Authorization' => 'Bearer ' . $this->apiKey,
+            ],
+            'timeout' => $timeoutSeconds,
+        ]);
+
+        return $this->decode($path, $response->getStatusCode(), (string) $response->getBody());
+    }
+
+    /**
+     * Plain JSON client report. Body is the report object, with no input wrapper.
+     *
+     * @param array<string, mixed> $report
+     */
+    public function postClientReport(array $report, float $timeoutSeconds = 2.0): void
+    {
+        $this->postJson('v1/client-reports', $report, $timeoutSeconds);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function decode(string $path, int $status, string $raw): array
+    {
         if ($status < 200 || $status >= 300) {
             $parsed = IngestError::parse($raw);
+            $detail = self::formatErrorDetail($raw, $parsed);
             throw new TransportException(
-                "Talaria {$path} failed: HTTP {$status}",
+                "Talaria {$path} failed: HTTP {$status}" . ($detail !== '' ? " — {$detail}" : ''),
                 $status,
-                className: $parsed->className,
                 retry: $parsed->retry,
                 bodyMessage: $parsed->message,
+                problemCode: $parsed->code,
+                requestId: $parsed->requestId,
             );
         }
         $decoded = json_decode($raw, true);
@@ -132,8 +160,9 @@ final class ServerpodHttpTransport implements TransportInterface, \Talaria\Flags
     private static function formatErrorDetail(string $body, IngestError $parsed): string
     {
         $parts = array_filter([
-            $parsed->className,
+            $parsed->code,
             $parsed->message,
+            $parsed->redirectUrl,
         ]);
         if ($parts !== []) {
             return implode(': ', $parts);

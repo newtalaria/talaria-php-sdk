@@ -26,7 +26,6 @@ final class StackFrameBuilder
             : null;
 
         $wire = [
-            '__className__' => 'StackFrameDto',
             'platform' => 'php',
         ];
 
@@ -60,7 +59,6 @@ final class StackFrameBuilder
         }
 
         return [
-            '__className__' => 'StackFrameDto',
             'filename' => basename($file),
             'absPath' => $file,
             'lineno' => $line,

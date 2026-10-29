@@ -28,8 +28,9 @@ Packagist reads a root `composer.json`, so each package is mirrored:
 
 ## What you get
 
-- Batched ingest to `/events/ingestBatch` and (when tracing is on) `/spans/ingestBatch`
-- Project API key auth (`X-API-Key`, `tal_live_…`)
+- Batched ingest to `POST /v1/events`, `POST /v1/spans`, and `POST /v1/analytics` as `{"events":[…]}` or `{"spans":[…]}`
+- `Authorization: Bearer` with a checksummed `tal_sk_` key. The host is `https://ingest-<cell>.newtalaria.com` unless `TALARIA_URL` or the `url` option is set
+- Browser inject uses `browser_api_key` / `TALARIA_BROWSER_API_KEY` (`tal_pk_` only)
 - Server-side fingerprinting — the SDK never computes issue groups
 - Tracing, analytics, and sample rates follow [project configuration](https://www.newtalaria.com/docs/configuration)
 - PSR-3 `Talaria\Logger` on the core package; framework adapters wire exceptions, HTTP, and databases for you

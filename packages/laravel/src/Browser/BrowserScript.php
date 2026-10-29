@@ -25,20 +25,18 @@ final class BrowserScript
         }
 
         $apiKey = $this->stringConfig('talaria.browser_api_key');
-        if ($apiKey === '') {
-            $apiKey = $this->stringConfig('talaria.api_key');
-        }
-        if (!str_starts_with($apiKey, 'tal_live_')) {
+        if (!\Talaria\Credential::isPublishableKey($apiKey)) {
             return null;
         }
+        $credential = \Talaria\Credential::parseApiKey($apiKey);
 
-        $dsn = $this->stringConfig('talaria.browser_dsn');
-        if ($dsn === '') {
-            $dsn = $this->stringConfig('talaria.dsn');
-        }
-        $dsn = rtrim($dsn, '/');
-        if ($dsn === '') {
-            return null;
+        $url = rtrim($this->stringConfig('talaria.url'), '/');
+        if ($url === '') {
+            try {
+                $url = $credential->ingestUrl();
+            } catch (\InvalidArgumentException) {
+                return null;
+            }
         }
 
         $version = $this->stringConfig('talaria.browser_sdk_version');
@@ -47,7 +45,7 @@ final class BrowserScript
         }
 
         $options = [
-            'dsn' => $dsn,
+            'url' => $url,
             'apiKey' => $apiKey,
             'publicAnalytics' => true,
             'tags' => [

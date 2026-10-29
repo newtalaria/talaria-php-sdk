@@ -40,8 +40,8 @@ final class ConfigTest extends TestCase
     public function testEnableAnalyticsDefaultsTrue(): void
     {
         $cfg = new Config([
-            'dsn' => 'https://api.example.com',
-            'apiKey' => 'tal_live_testkeytestkeytestkeytestkey123456',
+            'url' => 'https://api.example.com',
+            'apiKey' => \Talaria\Credential::example(),
         ]);
 
         self::assertFalse($cfg->enableAnalytics);
@@ -50,8 +50,8 @@ final class ConfigTest extends TestCase
     public function testEnableAnalyticsCanDisable(): void
     {
         $cfg = new Config([
-            'dsn' => 'https://api.example.com',
-            'apiKey' => 'tal_live_testkeytestkeytestkeytestkey123456',
+            'url' => 'https://api.example.com',
+            'apiKey' => \Talaria\Credential::example(),
             'enableAnalytics' => false,
         ]);
 

@@ -10,7 +10,6 @@ use Talaria\Context\RuntimeContext;
  * Ring buffer of recent breadcrumbs attached to error events.
  *
  * @phpstan-type Breadcrumb array{
- *   __className__: string,
  *   timestamp: string,
  *   type: string,
  *   category?: string,
@@ -49,7 +48,6 @@ final class BreadcrumbBuffer
     public function add(array $breadcrumb): void
     {
         $item = [
-            '__className__' => 'BreadcrumbDto',
             'timestamp' => is_string($breadcrumb['timestamp'] ?? null) && $breadcrumb['timestamp'] !== ''
                 ? $breadcrumb['timestamp']
                 : RuntimeContext::isoTimestamp(),
@@ -73,7 +71,7 @@ final class BreadcrumbBuffer
             $item['data'] = $data;
         }
 
-        if (($item['type'] ?? '') === 'query') {
+        if ($item['type'] === 'query') {
             $this->trim('query', $this->queryCap() - 1);
         } else {
             $this->trim(null, $this->otherCap() - 1);
@@ -106,7 +104,7 @@ final class BreadcrumbBuffer
         }
         $matched = [];
         foreach ($this->items as $index => $existing) {
-            $isQuery = ($existing['type'] ?? '') === 'query';
+            $isQuery = $existing['type'] === 'query';
             $hit = $type === null ? !$isQuery : $isQuery;
             if ($hit) {
                 $matched[] = $index;

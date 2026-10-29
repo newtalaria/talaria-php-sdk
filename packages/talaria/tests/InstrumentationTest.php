@@ -134,8 +134,8 @@ final class InstrumentationTest extends TestCase
     private function client(FakeSpanTransport $spans): TalariaClient
     {
         $client = new TalariaClient([
-            'dsn' => 'https://api.example.com',
-            'apiKey' => 'tal_live_testkeytestkeytestkeytestkey123456',
+            'url' => 'https://api.example.com',
+            'apiKey' => \Talaria\Credential::example(),
             'defaultIntegrations' => false,
             'maxBatchSize' => 50,
             'flushIntervalMs' => 60_000,

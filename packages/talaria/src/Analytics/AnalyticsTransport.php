@@ -11,7 +11,7 @@ use Talaria\Exception\TransportException;
 use Talaria\Transport\IngestError;
 
 /**
- * Minimal Serverpod RPC client for analytics/ingestBatch.
+ * HTTP transport for /v1/analytics batch ingest.
  *
  * Uses a dedicated Guzzle client — never the app HTTP stack — so ingest is
  * not recorded as a child span of the traced request.
@@ -42,23 +42,17 @@ final class AnalyticsTransport implements AnalyticsTransportInterface
         }
 
         $payload = [
-            'input' => [
-                '__className__' => 'IngestAnalyticsEventBatchInput',
-                'events' => array_map(
-                    static fn (AnalyticsEvent $event) => $event->toWire(),
-                    $events,
-                ),
-            ],
+            'events' => array_map(
+                static fn (AnalyticsEvent $event) => $event->toWire(),
+                $events,
+            ),
         ];
 
-        $url = rtrim($this->baseUrl, '/') . '/analytics/ingestBatch';
+        $url = rtrim($this->baseUrl, '/') . '/v1/analytics';
 
         try {
             $response = $this->http->request('POST', $url, [
-                'headers' => [
-                    'Content-Type' => 'application/json; charset=utf-8',
-                    'X-API-Key' => $this->apiKey,
-                ],
+                'headers' => \Talaria\Transport\Bearer::headers($this->apiKey),
                 'json' => $payload,
                 'timeout' => $this->timeoutSeconds,
             ]);
@@ -73,15 +67,16 @@ final class AnalyticsTransport implements AnalyticsTransportInterface
             $parsed = IngestError::parse($body);
             $detail = self::formatErrorDetail($body, $parsed);
             $prefix = $status !== null
-                ? "Talaria analytics/ingestBatch failed: HTTP {$status}"
-                : 'Talaria analytics/ingestBatch failed: ' . $e->getMessage();
+                ? "Talaria /v1/analytics failed: HTTP {$status}"
+                : 'Talaria /v1/analytics failed: ' . $e->getMessage();
             throw new TransportException(
                 $prefix . ($detail !== '' ? " — {$detail}" : ''),
                 $status,
                 previous: $e,
-                className: $parsed->className,
                 retry: $parsed->retry,
                 bodyMessage: $parsed->message,
+                problemCode: $parsed->code,
+                requestId: $parsed->requestId,
             );
         }
 
@@ -95,18 +90,19 @@ final class AnalyticsTransport implements AnalyticsTransportInterface
         $detail = self::formatErrorDetail($body, $parsed);
 
         throw new TransportException(
-            "Talaria analytics/ingestBatch failed: HTTP {$status}" . ($detail !== '' ? " — {$detail}" : ''),
+            "Talaria /v1/analytics failed: HTTP {$status}" . ($detail !== '' ? " — {$detail}" : ''),
             $status,
-            className: $parsed->className,
             retry: $parsed->retry,
             bodyMessage: $parsed->message,
+            problemCode: $parsed->code,
+            requestId: $parsed->requestId,
         );
     }
 
     private static function formatErrorDetail(string $body, IngestError $parsed): string
     {
         $parts = array_filter([
-            $parsed->className,
+            $parsed->code,
             $parsed->message,
         ]);
         if ($parts !== []) {

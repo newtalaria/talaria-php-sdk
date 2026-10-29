@@ -35,7 +35,6 @@ final class ExceptionPayloadBuilder
         }
 
         return [
-            '__className__' => 'ExceptionDataDto',
             'values' => $values,
         ];
     }
@@ -62,7 +61,6 @@ final class ExceptionPayloadBuilder
     private static function mechanismWire(?array $mechanism): array
     {
         return [
-            '__className__' => 'ExceptionMechanismDto',
             'type' => is_string($mechanism['type'] ?? null) && $mechanism['type'] !== ''
                 ? $mechanism['type']
                 : 'generic',
@@ -84,13 +82,11 @@ final class ExceptionPayloadBuilder
         $frames = StackFrameBuilder::framesFromThrowable($throwable);
 
         $wire = [
-            '__className__' => 'ExceptionValueDto',
             'type' => $throwable::class,
             'value' => $throwable->getMessage(),
             'code' => (string) $throwable->getCode(),
             'mechanism' => $mechanismWire,
             'stacktrace' => [
-                '__className__' => 'StackTraceDto',
                 'frames' => $frames,
             ],
         ];

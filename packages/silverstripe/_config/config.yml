@@ -18,13 +18,9 @@ SilverStripe\Core\Injector\Injector:
       PushTalariaHandler: [ pushHandler, [ '%$talariaLogHandler' ] ]
 
 Talaria\SilverStripe\Config:
-  # DSN defaults to https://ingest.newtalaria.com. Set dsn here for another host.
-  # Optional: browser inject only (falls back to dsn). Use when PHP DSN is not
-  # reachable from the browser (e.g. http://host.docker.internal behind HTTPS).
-  browserDsn: '`TALARIA_BROWSER_DSN`'
-  # Optional: browser inject only. When set, CMS and public pages use this
-  # project key. PHP keeps apiKey. Leave unset to share the PHP key.
-  browserApiKey: '`TALARIA_BROWSER_API_KEY`'
+  # url is optional. When unset, the SDK derives https://ingest-<cell>.newtalaria.com from the key.
+  # browser_api_key holds a publishable tal_pk_ key for the injected browser SDK.
+  browser_api_key: '`TALARIA_BROWSER_API_KEY`'
   apiKey: '`TALARIA_API_KEY`'
   release: '`TALARIA_RELEASE`'
   minLevel: warning

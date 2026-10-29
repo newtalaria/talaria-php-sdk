@@ -25,7 +25,6 @@ final class MonitorCheckIn
     public static function payload(string $slug, string $status, array $schedule = []): array
     {
         $input = [
-            '__className__' => 'CheckInInput',
             'slug' => $slug,
             'status' => $status,
         ];
@@ -46,6 +45,6 @@ final class MonitorCheckIn
             $input['resource'] = $schedule['resource'];
         }
 
-        return ['input' => $input];
+        return $input;
     }
 }

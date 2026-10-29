@@ -100,8 +100,8 @@ final class LoggerTest extends TestCase
     {
         $transport = new FakeTransport();
         $client = new TalariaClient([
-            'dsn' => 'https://api.example.com',
-            'apiKey' => 'tal_live_testkeytestkeytestkeytestkey123456',
+            'url' => 'https://api.example.com',
+            'apiKey' => \Talaria\Credential::example(),
             'defaultIntegrations' => false,
             'minLevel' => 'info',
             'maxBatchSize' => 50,
@@ -120,8 +120,8 @@ final class LoggerTest extends TestCase
     private function makeLogger(FakeTransport $transport): Logger
     {
         $client = new TalariaClient([
-            'dsn' => 'https://api.example.com',
-            'apiKey' => 'tal_live_testkeytestkeytestkeytestkey123456',
+            'url' => 'https://api.example.com',
+            'apiKey' => \Talaria\Credential::example(),
             'defaultIntegrations' => false,
             'maxBatchSize' => 50,
             'flushIntervalMs' => 60_000,

@@ -12,7 +12,7 @@ use Talaria\Transport\NullTransport;
 /**
  * Builds a shared TalariaClient from YAML / environment config.
  *
- * When DSN/API key are missing, returns a disabled client so Install / flush
+ * When URL/API key are missing, returns a disabled client so Install / flush
  * does not crash before env vars are set.
  */
 final class InjectorFactory implements Factory
@@ -30,17 +30,16 @@ final class InjectorFactory implements Factory
         }
 
         $options = Config::toClientOptions();
-        $dsn = is_string($options['dsn'] ?? null) ? $options['dsn'] : '';
         $apiKey = is_string($options['apiKey'] ?? null) ? $options['apiKey'] : '';
 
-        if ($dsn === '' || $apiKey === '' || !str_starts_with($apiKey, 'tal_live_')) {
-            error_log('[Talaria] Silverstripe client disabled — set TALARIA_DSN and TALARIA_API_KEY.');
+        if ($apiKey === '') {
+            error_log('[Talaria] Silverstripe client disabled — set TALARIA_API_KEY.');
             self::$client = new TalariaClient(
                 [
-                    'dsn' => 'https://disabled.invalid',
-                    'apiKey' => 'tal_live_disabled_placeholder_key_xxxxxxxxxxxx',
-                    'sampleRate' => 0.0,
+                    'url' => 'https://ingest-nz1.newtalaria.com',
+                    'apiKey' => \Talaria\Credential::example('sk', 'dev', 'nz1'),
                     'defaultIntegrations' => false,
+                    'remoteConfig' => false,
                 ],
                 new NullTransport(),
             );

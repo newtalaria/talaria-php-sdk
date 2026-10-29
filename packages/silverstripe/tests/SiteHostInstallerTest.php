@@ -56,11 +56,11 @@ MAILTO=""
 0 0 * * * cd /container/application && vendor/bin/sake dev/tasks/SomethingElse
 CRON;
         $tokens = [
-            'process-job-queue' => 'tal_ping_aaa',
-            'sync-careers' => 'tal_ping_bbb',
+            'process-job-queue' => \Talaria\Credential::exampleMonitor(),
+            'sync-careers' => \Talaria\Credential::exampleMonitor('nz1', str_repeat('b', 43)),
         ];
-        $once = SiteHostInstaller::reconcileCrontab($legacy, $jobs, 'https://api.newtalaria.com', $tokens);
-        $twice = SiteHostInstaller::reconcileCrontab($once, $jobs, 'https://api.newtalaria.com/', $tokens);
+        $once = SiteHostInstaller::reconcileCrontab($legacy, $jobs, 'https://ingest.newtalaria.com', $tokens);
+        $twice = SiteHostInstaller::reconcileCrontab($once, $jobs, 'https://ingest.newtalaria.com/', $tokens);
 
         self::assertSame($once, $twice);
         self::assertSame(1, substr_count($twice, SiteHostInstaller::CRON_BEGIN));
@@ -69,15 +69,15 @@ CRON;
         self::assertStringContainsString('# talaria-sitehost retired * * * * * cd /container/application && vendor/bin/sake dev/tasks/ProcessJobQueueTask', $twice);
         self::assertStringContainsString('SomethingElse', $twice);
         self::assertDoesNotMatchRegularExpression('/^0 1 \* \* \* cd /m', $twice);
-        self::assertStringContainsString("https://api.newtalaria.com/monitors/ping", $twice);
+        self::assertStringContainsString("https://ingest.newtalaria.com/v1/check-ins", $twice);
     }
 
     public function testExistingMonitorLinesFoldIntoOneBlock(): void
     {
         $jobs = [$this->jobs()[0]];
-        $existing = "* * * * * curl https://api.example/monitors/ping; cd /container/application && vendor/bin/sake dev/tasks/ProcessJobQueueTask; exit 0 # talaria-monitor:process-job-queue\n";
-        $once = SiteHostInstaller::reconcileCrontab($existing, $jobs, 'https://api.newtalaria.com', [
-            'process-job-queue' => 'tal_ping_aaa',
+        $existing = "* * * * * curl https://api.example/v1/check-ins; cd /container/application && vendor/bin/sake dev/tasks/ProcessJobQueueTask; exit 0 # talaria-monitor:process-job-queue\n";
+        $once = SiteHostInstaller::reconcileCrontab($existing, $jobs, 'https://ingest.newtalaria.com', [
+            'process-job-queue' => \Talaria\Credential::exampleMonitor(),
         ]);
 
         self::assertSame(1, substr_count($once, 'ProcessJobQueueTask'));
@@ -131,7 +131,7 @@ CRON;
         self::assertStringNotContainsString('[program:talaria-sitehost-probe]', (string) file_get_contents($supervisor));
     }
 
-    public function testSecondRunReusesPingToken(): void
+    public function testSecondRunReusesMonitorToken(): void
     {
         $this->writeSpec();
         $supervisor = $this->root . '/supervisor/supervisord.conf';
@@ -139,11 +139,11 @@ CRON;
         $calls = 0;
         $transport = self::transport(static function () use (&$calls): array {
             $calls++;
-            $token = $calls === 1 ? 'tal_ping_aaa' : 'tal_ping_bbb';
+            $token = $calls === 1 ? \Talaria\Credential::exampleMonitor() : \Talaria\Credential::exampleMonitor('nz1', str_repeat('b', 43));
 
             return [
                 'code' => 200,
-                'body' => json_encode(['pingToken' => $token], JSON_THROW_ON_ERROR),
+                'body' => json_encode(['monitorToken' => $token], JSON_THROW_ON_ERROR),
             ];
         });
         $installer = $this->installer($transport);
@@ -153,12 +153,12 @@ CRON;
         self::assertSame(2, $calls);
         $cron = (string) file_get_contents($this->root . '/cron/crontab');
         self::assertSame(1, substr_count($cron, SiteHostInstaller::CRON_BEGIN));
-        self::assertStringContainsString('tal_ping_aaa', $cron);
-        self::assertStringContainsString('tal_ping_bbb', $cron);
+        self::assertStringContainsString(\Talaria\Credential::exampleMonitor(), $cron);
+        self::assertStringContainsString(\Talaria\Credential::exampleMonitor('nz1', str_repeat('b', 43)), $cron);
         self::assertSame(1, substr_count((string) file_get_contents($supervisor), '[program:talaria-sitehost-probe]'));
         $tokens = (string) file_get_contents($this->root . '/app/.talaria-monitor-tokens');
-        self::assertStringContainsString('process-job-queue=tal_ping_aaa', $tokens);
-        self::assertStringContainsString('sync-careers=tal_ping_bbb', $tokens);
+        self::assertStringContainsString('process-job-queue=' . \Talaria\Credential::exampleMonitor(), $tokens);
+        self::assertStringContainsString('sync-careers=' . \Talaria\Credential::exampleMonitor('nz1', str_repeat('b', 43)), $tokens);
     }
 
     public function testPartialRegistrationCanBeRerun(): void
@@ -169,13 +169,13 @@ CRON;
         $transport = self::transport(static function () use (&$attempts): array {
             $attempts++;
             if ($attempts === 1) {
-                return ['code' => 200, 'body' => json_encode(['pingToken' => 'tal_ping_aaa'], JSON_THROW_ON_ERROR)];
+                return ['code' => 200, 'body' => json_encode(['monitorToken' => \Talaria\Credential::exampleMonitor()], JSON_THROW_ON_ERROR)];
             }
             if ($attempts === 2) {
                 return ['code' => 400, 'body' => json_encode(['message' => 'unavailable'], JSON_THROW_ON_ERROR)];
             }
 
-            return ['code' => 200, 'body' => json_encode(['pingToken' => 'tal_ping_bbb'], JSON_THROW_ON_ERROR)];
+            return ['code' => 200, 'body' => json_encode(['monitorToken' => \Talaria\Credential::exampleMonitor('nz1', str_repeat('b', 43))], JSON_THROW_ON_ERROR)];
         });
         $installer = $this->installer($transport);
         try {
@@ -185,12 +185,12 @@ CRON;
             self::assertStringContainsString('sync-careers', $exception->getMessage());
         }
         self::assertFileDoesNotExist($this->root . '/cron/crontab');
-        self::assertStringContainsString('process-job-queue=tal_ping_aaa', (string) file_get_contents($this->root . '/app/.talaria-monitor-tokens'));
+        self::assertStringContainsString('process-job-queue=' . \Talaria\Credential::exampleMonitor(), (string) file_get_contents($this->root . '/app/.talaria-monitor-tokens'));
 
         $installer->install();
         $cron = (string) file_get_contents($this->root . '/cron/crontab');
-        self::assertStringContainsString('tal_ping_aaa', $cron);
-        self::assertStringContainsString('tal_ping_bbb', $cron);
+        self::assertStringContainsString(\Talaria\Credential::exampleMonitor(), $cron);
+        self::assertStringContainsString(\Talaria\Credential::exampleMonitor('nz1', str_repeat('b', 43)), $cron);
         self::assertSame(3, $attempts);
     }
 
@@ -268,8 +268,8 @@ CRON;
             $this->root . '/cron/crontab',
             $this->root . '/supervisor/supervisord.conf',
             $this->root . '/app/.talaria-monitor-tokens',
-            'https://api.newtalaria.com',
-            'tal_live_test',
+            'https://ingest.newtalaria.com',
+            \Talaria\Credential::example(),
             $transport,
         );
     }

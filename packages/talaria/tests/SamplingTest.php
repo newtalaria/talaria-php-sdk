@@ -117,8 +117,8 @@ final class SamplingTest extends TestCase
     public function testEnableTracingDefaultsSampleRateToTenPercent(): void
     {
         $config = new Config([
-            'dsn' => 'https://api.example.com',
-            'apiKey' => 'tal_live_testkeytestkeytestkeytestkey123456',
+            'url' => 'https://api.example.com',
+            'apiKey' => \Talaria\Credential::example(),
             'enableTracing' => true,
         ]);
         self::assertFalse($config->enableTracing);
@@ -135,8 +135,8 @@ final class SamplingTest extends TestCase
     public function testTracesSampleRateAloneEnablesTracing(): void
     {
         $config = new Config([
-            'dsn' => 'https://api.example.com',
-            'apiKey' => 'tal_live_testkeytestkeytestkeytestkey123456',
+            'url' => 'https://api.example.com',
+            'apiKey' => \Talaria\Credential::example(),
             'tracesSampleRate' => 0.5,
         ]);
         self::assertFalse($config->enableTracing);
@@ -155,8 +155,8 @@ final class SamplingTest extends TestCase
     private function client(array $overrides, FakeSpanTransport $spans): TalariaClient
     {
         $client = new TalariaClient(array_merge([
-            'dsn' => 'https://api.example.com',
-            'apiKey' => 'tal_live_testkeytestkeytestkeytestkey123456',
+            'url' => 'https://api.example.com',
+            'apiKey' => \Talaria\Credential::example(),
             'defaultIntegrations' => false,
             'maxBatchSize' => 50,
             'flushIntervalMs' => 60_000,

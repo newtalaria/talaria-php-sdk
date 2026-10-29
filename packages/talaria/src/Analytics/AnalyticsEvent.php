@@ -57,7 +57,6 @@ final class AnalyticsEvent
     public function toWire(): array
     {
         $wire = [
-            '__className__' => 'IngestAnalyticsEventInput',
             'name' => $this->name,
             'kind' => $this->kind->value,
             'anonymousId' => $this->anonymousId,
