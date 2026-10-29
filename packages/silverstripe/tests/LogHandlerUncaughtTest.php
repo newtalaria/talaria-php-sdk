@@ -54,7 +54,7 @@ final class LogHandlerUncaughtTest extends TestCase
     {
         return new TalariaClient([
             'url' => 'https://api.example.com',
-            'apiKey' => 'tal_prod_testkeytestkeytestkeytestkey123456',
+            'apiKey' => \Talaria\Credential::example(),
             'defaultIntegrations' => false,
             'maxBatchSize' => 1,
             'flushIntervalMs' => 60_000,

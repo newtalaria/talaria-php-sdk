@@ -42,23 +42,17 @@ final class AnalyticsTransport implements AnalyticsTransportInterface
         }
 
         $payload = [
-            'input' => [
-                '__className__' => 'IngestAnalyticsEventBatchInput',
-                'events' => array_map(
-                    static fn (AnalyticsEvent $event) => $event->toWire(),
-                    $events,
-                ),
-            ],
+            'events' => array_map(
+                static fn (AnalyticsEvent $event) => $event->toWire(),
+                $events,
+            ),
         ];
 
         $url = rtrim($this->baseUrl, '/') . '/v1/analytics';
 
         try {
             $response = $this->http->request('POST', $url, [
-                'headers' => [
-                    'Content-Type' => 'application/json; charset=utf-8',
-                    'X-API-Key' => $this->apiKey,
-                ],
+                'headers' => \Talaria\Transport\Bearer::headers($this->apiKey),
                 'json' => $payload,
                 'timeout' => $this->timeoutSeconds,
             ]);
@@ -79,9 +73,10 @@ final class AnalyticsTransport implements AnalyticsTransportInterface
                 $prefix . ($detail !== '' ? " — {$detail}" : ''),
                 $status,
                 previous: $e,
-                className: $parsed->className,
                 retry: $parsed->retry,
                 bodyMessage: $parsed->message,
+                problemCode: $parsed->code,
+                requestId: $parsed->requestId,
             );
         }
 
@@ -97,16 +92,17 @@ final class AnalyticsTransport implements AnalyticsTransportInterface
         throw new TransportException(
             "Talaria /v1/analytics failed: HTTP {$status}" . ($detail !== '' ? " — {$detail}" : ''),
             $status,
-            className: $parsed->className,
             retry: $parsed->retry,
             bodyMessage: $parsed->message,
+            problemCode: $parsed->code,
+            requestId: $parsed->requestId,
         );
     }
 
     private static function formatErrorDetail(string $body, IngestError $parsed): string
     {
         $parts = array_filter([
-            $parsed->className,
+            $parsed->code,
             $parsed->message,
         ]);
         if ($parts !== []) {

@@ -64,7 +64,7 @@ final class AnalyticsTest extends TestCase
         $event = $analytics->batches[0][0];
         $wire = $event->toWire();
 
-        self::assertSame('IngestAnalyticsEventInput', $wire['__className__']);
+        self::assertArrayNotHasKey('__className__', $wire);
         self::assertSame('product_viewed', $wire['name']);
         self::assertSame('track', $wire['kind']);
         self::assertSame('anon-browser', $wire['anonymousId']);
@@ -209,9 +209,9 @@ final class AnalyticsTest extends TestCase
         $analytics->failWith = new TransportException(
             'Talaria /v1/analytics failed: HTTP 400',
             400,
-            className: 'ApiUnauthorizedException',
+            problemCode: 'insufficient_scope',
             retry: false,
-            bodyMessage: 'API key lacks required scope: analyticsWrite',
+            bodyMessage: 'analytics:write is required',
         );
         $events = new FakeTransport();
         $client = $this->client($analytics, ['anonymousId' => 'anon-1'], $events);
@@ -234,7 +234,7 @@ final class AnalyticsTest extends TestCase
         $events->failWith = new TransportException(
             'Talaria /v1/events failed: HTTP 400',
             400,
-            className: 'ApiUnauthorizedException',
+            problemCode: 'invalid_key',
             retry: false,
             bodyMessage: 'Invalid API key',
         );
@@ -259,7 +259,7 @@ final class AnalyticsTest extends TestCase
         $analytics = new FakeAnalyticsTransport();
         $client = new TalariaClient([
             'url' => 'https://api.example.com',
-            'apiKey' => 'tal_prod_testkeytestkeytestkeytestkey123456',
+            'apiKey' => \Talaria\Credential::example(),
             'defaultIntegrations' => false,
             'enableTracing' => true,
             'tracesSampleRate' => 1.0,
@@ -302,7 +302,7 @@ final class AnalyticsTest extends TestCase
 
         $transport = new AnalyticsTransport(
             'https://api.example.com/',
-            'tal_prod_abc',
+            \Talaria\Credential::example(),
             2.0,
             $http,
         );
@@ -325,18 +325,18 @@ final class AnalyticsTest extends TestCase
         $request = $history[0]['request'];
         self::assertSame('POST', $request->getMethod());
         self::assertSame('https://api.example.com/v1/analytics', (string) $request->getUri());
-        self::assertSame('tal_prod_abc', $request->getHeaderLine('X-API-Key'));
+        self::assertSame('Bearer ' . \Talaria\Credential::example(), $request->getHeaderLine('Authorization'));
 
         /** @var array<string, mixed> $body */
         $body = json_decode((string) $request->getBody(), true, 512, JSON_THROW_ON_ERROR);
-        self::assertSame('IngestAnalyticsEventBatchInput', $body['input']['__className__']);
-        self::assertCount(1, $body['input']['events']);
-        self::assertSame('IngestAnalyticsEventInput', $body['input']['events'][0]['__className__']);
-        self::assertSame('product_viewed', $body['input']['events'][0]['name']);
-        self::assertSame('track', $body['input']['events'][0]['kind']);
-        self::assertSame('anon-1', $body['input']['events'][0]['anonymousId']);
-        self::assertArrayNotHasKey('environment', $body['input']['events'][0]);
-        self::assertSame('{"price":129.99}', $body['input']['events'][0]['propertiesJson']);
+        self::assertArrayNotHasKey('input', $body);
+        self::assertCount(1, $body['events']);
+        self::assertArrayNotHasKey('__className__', $body['events'][0]);
+        self::assertSame('product_viewed', $body['events'][0]['name']);
+        self::assertSame('track', $body['events'][0]['kind']);
+        self::assertSame('anon-1', $body['events'][0]['anonymousId']);
+        self::assertArrayNotHasKey('environment', $body['events'][0]);
+        self::assertSame('{"price":129.99}', $body['events'][0]['propertiesJson']);
     }
 
     /**
@@ -349,7 +349,7 @@ final class AnalyticsTest extends TestCase
     ): TalariaClient {
         $client = new TalariaClient(array_merge([
             'url' => 'https://api.example.com',
-            'apiKey' => 'tal_prod_testkeytestkeytestkeytestkey123456',
+            'apiKey' => \Talaria\Credential::example(),
             'defaultIntegrations' => false,
             'maxBatchSize' => 50,
             'flushIntervalMs' => 60_000,

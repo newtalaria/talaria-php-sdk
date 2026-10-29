@@ -239,7 +239,7 @@ final class LoggerApiTest extends TestCase
     {
         return new TalariaClient(array_merge([
             'url' => 'https://api.example.com',
-            'apiKey' => 'tal_prod_testkeytestkeytestkeytestkey123456',
+            'apiKey' => \Talaria\Credential::example(),
             'defaultIntegrations' => false,
             'maxBatchSize' => 50,
             'flushIntervalMs' => 60_000,

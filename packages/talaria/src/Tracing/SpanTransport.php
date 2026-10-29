@@ -42,20 +42,14 @@ final class SpanTransport implements SpanTransportInterface
         }
 
         $payload = [
-            'input' => [
-                '__className__' => 'IngestSpanBatchInput',
-                'spans' => array_map(static fn (Span $span) => $span->toWire(), $spans),
-            ],
+            'spans' => array_map(static fn (Span $span) => $span->toWire(), $spans),
         ];
 
         $url = rtrim($this->baseUrl, '/') . '/v1/spans';
 
         try {
             $response = $this->http->request('POST', $url, [
-                'headers' => [
-                    'Content-Type' => 'application/json; charset=utf-8',
-                    'X-API-Key' => $this->apiKey,
-                ],
+                'headers' => \Talaria\Transport\Bearer::headers($this->apiKey),
                 'json' => $payload,
                 'timeout' => $this->timeoutSeconds,
             ]);
@@ -76,9 +70,10 @@ final class SpanTransport implements SpanTransportInterface
                 $prefix . ($detail !== '' ? " — {$detail}" : ''),
                 $status,
                 previous: $e,
-                className: $parsed->className,
                 retry: $parsed->retry,
                 bodyMessage: $parsed->message,
+                problemCode: $parsed->code,
+                requestId: $parsed->requestId,
             );
         }
 
@@ -94,16 +89,17 @@ final class SpanTransport implements SpanTransportInterface
         throw new TransportException(
             "Talaria /v1/spans failed: HTTP {$status}" . ($detail !== '' ? " — {$detail}" : ''),
             $status,
-            className: $parsed->className,
             retry: $parsed->retry,
             bodyMessage: $parsed->message,
+            problemCode: $parsed->code,
+            requestId: $parsed->requestId,
         );
     }
 
     private static function formatErrorDetail(string $body, IngestError $parsed): string
     {
         $parts = array_filter([
-            $parsed->className,
+            $parsed->code,
             $parsed->message,
         ]);
         if ($parts !== []) {

@@ -15,15 +15,13 @@ PHP 8.1+ and Silverstripe 4.13, 5, or 6.
 composer require talaria/silverstripe
 ```
 
-The DSN defaults to `https://ingest.newtalaria.com`. Set the API key, then flush:
+Set a secret key, then flush. Leave `TALARIA_URL` empty to use `https://ingest-<cell>.newtalaria.com` from that key:
 
 ```bash
-TALARIA_API_KEY="tal_live_…"
-# Optional. CMS and public pages use this project. PHP keeps TALARIA_API_KEY.
-# TALARIA_BROWSER_API_KEY="tal_live_…"
+TALARIA_API_KEY="tal_sk_prod_nz1_…"
+# Publishable key for the injected browser SDK (config key browser_api_key).
+# TALARIA_BROWSER_API_KEY="tal_pk_prod_nz1_…"
 ```
-
-The API key decides the environment.
 
 ```bash
 vendor/bin/sake dev/build flush=1
@@ -33,7 +31,7 @@ Optional YAML for log level, service name, and browser inject is in the [Silvers
 
 ## SiteHost
 
-`vendor/bin/talaria-sitehost install` reads `talaria/sitehost/monitors.json` and reconciles one crontab block and the supervisord probe. A second run reuses the stored ping tokens. Cron jobs still ping with `curl`. The SiteHost deploy action runs this command, and that action also installs the log collector.
+`vendor/bin/talaria-sitehost install` reads `talaria/sitehost/monitors.json` and reconciles one crontab block and the supervisord probe. Registration uses a `tal_sk_` key on `POST /v1/monitors/{slug}/check-ins`. Cron lines check in with the stored `tal_mon_` token: `Authorization: Bearer` to `POST /v1/check-ins`. A second run reuses those tokens. The SiteHost deploy action runs this command, and that action also installs the log collector.
 
 ## License
 

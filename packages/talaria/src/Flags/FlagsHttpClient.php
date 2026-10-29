@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Talaria\Flags;
 
 /**
- * Minimal HTTP surface used by {@see Flags} (evaluate / downloadDefinitions).
+ * Minimal HTTP surface used by {@see Flags} (evaluate / definitions).
  */
 interface FlagsHttpClient
 {
@@ -14,4 +14,9 @@ interface FlagsHttpClient
      * @return array<string, mixed>
      */
     public function postJson(string $path, array $json, float $timeoutSeconds = 0.2): array;
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function getJson(string $path, float $timeoutSeconds = 0.2): array;
 }

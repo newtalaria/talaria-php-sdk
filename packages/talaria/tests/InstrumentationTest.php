@@ -135,7 +135,7 @@ final class InstrumentationTest extends TestCase
     {
         $client = new TalariaClient([
             'url' => 'https://api.example.com',
-            'apiKey' => 'tal_prod_testkeytestkeytestkeytestkey123456',
+            'apiKey' => \Talaria\Credential::example(),
             'defaultIntegrations' => false,
             'maxBatchSize' => 50,
             'flushIntervalMs' => 60_000,

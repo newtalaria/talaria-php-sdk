@@ -118,7 +118,7 @@ final class SamplingTest extends TestCase
     {
         $config = new Config([
             'url' => 'https://api.example.com',
-            'apiKey' => 'tal_prod_testkeytestkeytestkeytestkey123456',
+            'apiKey' => \Talaria\Credential::example(),
             'enableTracing' => true,
         ]);
         self::assertFalse($config->enableTracing);
@@ -136,7 +136,7 @@ final class SamplingTest extends TestCase
     {
         $config = new Config([
             'url' => 'https://api.example.com',
-            'apiKey' => 'tal_prod_testkeytestkeytestkeytestkey123456',
+            'apiKey' => \Talaria\Credential::example(),
             'tracesSampleRate' => 0.5,
         ]);
         self::assertFalse($config->enableTracing);
@@ -156,7 +156,7 @@ final class SamplingTest extends TestCase
     {
         $client = new TalariaClient(array_merge([
             'url' => 'https://api.example.com',
-            'apiKey' => 'tal_prod_testkeytestkeytestkeytestkey123456',
+            'apiKey' => \Talaria\Credential::example(),
             'defaultIntegrations' => false,
             'maxBatchSize' => 50,
             'flushIntervalMs' => 60_000,

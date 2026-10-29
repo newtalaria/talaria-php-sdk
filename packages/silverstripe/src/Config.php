@@ -12,16 +12,14 @@ use Talaria\Config as SdkConfig;
  *
  * Prefer environment variables:
  * - TALARIA_API_KEY
- * - TALARIA_URL (optional; defaults to https://ingest.newtalaria.com)
- * - TALARIA_BROWSER_API_KEY (optional; browser inject only — CMS and public pages use this project; PHP keeps TALARIA_API_KEY)
+ * - TALARIA_URL (optional; otherwise the SDK derives https://ingest-<cell>.newtalaria.com)
+ * - TALARIA_BROWSER_API_KEY (optional publishable tal_pk_ key for browser inject; config key browser_api_key)
  * - TALARIA_RELEASE (optional)
  * - TALARIA_COMMIT_SHA (optional)
  */
 class Config
 {
     use Configurable;
-
-    private const DEFAULT_URL = 'https://ingest.newtalaria.com';
 
     /**
      * @return array<string, mixed>
@@ -39,9 +37,6 @@ class Config
         if ($url === '') {
             $url = self::env('TALARIA_URL');
         }
-        if ($url === '') {
-            $url = self::DEFAULT_URL;
-        }
         if ($apiKey === '') {
             $apiKey = self::env('TALARIA_API_KEY');
         }
@@ -53,7 +48,6 @@ class Config
         }
 
         $options = [
-            'url' => $url,
             'apiKey' => $apiKey,
             'maxBatchSize' => (int) ($cfg->get('maxBatchSize') ?? 50),
             'flushIntervalMs' => (int) ($cfg->get('flushIntervalMs') ?? 2000),
@@ -69,6 +63,10 @@ class Config
 
         if (self::tracesSampleRateProvided()) {
             $options['tracesSampleRate'] = self::tracesSampleRate();
+        }
+
+        if ($url !== '') {
+            $options['url'] = $url;
         }
 
         if ($release !== '') {
@@ -107,10 +105,10 @@ class Config
     public static function toBrowserOptions(string $runtimeTag, array $extraTags = []): ?array
     {
         $options = self::toClientOptions();
-        $url = self::resolveBrowserUrl($options);
-        $apiKey = self::resolveBrowserApiKey($options);
+        $apiKey = self::resolveBrowserApiKey();
+        $url = self::resolveBrowserUrl($options, $apiKey);
 
-        if ($url === '' || $apiKey === '' || !preg_match('/^tal_(prod|stg|test|dev)_/', $apiKey)) {
+        if ($url === '' || $apiKey === '') {
             return null;
         }
 
@@ -175,37 +173,41 @@ class Config
     }
 
     /**
-     * Browser URL: always uses the PHP client URL per TIS N2.
+     * Browser URL: TALARIA_URL / yaml url, otherwise derived from the publishable key's cell.
      *
      * @param array<string, mixed> $clientOptions
      */
-    private static function resolveBrowserUrl(array $clientOptions): string
+    private static function resolveBrowserUrl(array $clientOptions, string $apiKey): string
     {
         $url = is_string($clientOptions['url'] ?? null) ? $clientOptions['url'] : '';
-
-        return $url !== '' ? rtrim($url, '/') : '';
+        if ($url !== '') {
+            return rtrim($url, '/');
+        }
+        if ($apiKey === '') {
+            return '';
+        }
+        try {
+            return \Talaria\Credential::parseApiKey($apiKey)->ingestUrl();
+        } catch (\InvalidArgumentException) {
+            return '';
+        }
     }
 
     /**
-     * Browser API key: YAML/env `browserApiKey` / TALARIA_BROWSER_API_KEY, else the PHP key.
-     *
-     * A non-empty value sends CMS and public-page browser traffic to that project.
-     * An empty value keeps the PHP project key. A value that is not a tal_prod_/tal_stg_/tal_test_/tal_dev_ key
-     * disables browser inject.
-     *
-     * @param array<string, mixed> $clientOptions
+     * Browser API key: config key `browser_api_key` / TALARIA_BROWSER_API_KEY.
+     * It must be a publishable tal_pk_ key. The server tal_sk_ key is never injected.
      */
-    private static function resolveBrowserApiKey(array $clientOptions): string
+    private static function resolveBrowserApiKey(): string
     {
-        $browserKey = self::resolveString(static::config()->get('browserApiKey') ?? '');
+        $browserKey = self::resolveString(static::config()->get('browser_api_key') ?? '');
         if ($browserKey === '') {
             $browserKey = self::env('TALARIA_BROWSER_API_KEY');
         }
-        if ($browserKey !== '') {
-            return $browserKey;
+        if ($browserKey === '' || !\Talaria\Credential::isPublishableKey($browserKey)) {
+            return '';
         }
 
-        return is_string($clientOptions['apiKey'] ?? null) ? $clientOptions['apiKey'] : '';
+        return $browserKey;
     }
 
     /**

@@ -25,16 +25,18 @@ final class BrowserScript
         }
 
         $apiKey = $this->stringConfig('talaria.browser_api_key');
-        if ($apiKey === '') {
-            $apiKey = $this->stringConfig('talaria.api_key');
-        }
-        if (!preg_match('/^tal_(prod|stg|test|dev)_/', $apiKey)) {
+        if (!\Talaria\Credential::isPublishableKey($apiKey)) {
             return null;
         }
+        $credential = \Talaria\Credential::parseApiKey($apiKey);
 
         $url = rtrim($this->stringConfig('talaria.url'), '/');
         if ($url === '') {
-            return null;
+            try {
+                $url = $credential->ingestUrl();
+            } catch (\InvalidArgumentException) {
+                return null;
+            }
         }
 
         $version = $this->stringConfig('talaria.browser_sdk_version');

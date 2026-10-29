@@ -236,17 +236,18 @@ final class TalariaClient
             $this->flags->setPollIntervalSeconds($ttl);
         }
         try {
-            $document = $transport->postJson('sdk/getConfig', [
-                'input' => [
-                    '__className__' => 'GetSdkConfigInput',
-                    'schemaVersion' => 1,
-                    'sdkName' => 'talaria-php',
-                    'platform' => 'php',
-                    'revision' => is_array($cached) && is_array($cached['document'] ?? null)
-                        ? ($cached['document']['revision'] ?? null)
-                        : null,
-                ],
-            ], 0.2);
+            $revision = is_array($cached) && is_array($cached['document'] ?? null)
+                ? ($cached['document']['revision'] ?? null)
+                : null;
+            $query = [
+                'schemaVersion' => 1,
+                'sdkName' => 'talaria-php',
+                'platform' => 'php',
+            ];
+            if (is_string($revision) && $revision !== '') {
+                $query['revision'] = $revision;
+            }
+            $document = $transport->getJson('v1/sdk-config?' . http_build_query($query), 0.2);
             if (($document['unchanged'] ?? false) !== true) {
                 $this->config->applySdkDocument($document);
                 $stored = $document;
@@ -907,6 +908,22 @@ final class TalariaClient
         return $this->httpTransport->postJson(
             "v1/monitors/{$slug}/check-ins",
             MonitorCheckIn::payload($slug, $status, $schedule),
+            max(2.0, $this->config->httpTimeoutSeconds),
+        );
+    }
+
+    /**
+     * POST /v1/client-reports. The body is plain JSON with no input wrapper.
+     *
+     * @param array<string, mixed> $report
+     */
+    public function reportClient(array $report): void
+    {
+        if ($this->httpTransport === null) {
+            return;
+        }
+        $this->httpTransport->postClientReport(
+            $report,
             max(2.0, $this->config->httpTimeoutSeconds),
         );
     }

@@ -49,10 +49,6 @@ final class TalariaServiceProvider extends ServiceProvider
             }
 
             $options = [
-                'url' => $url !== '' ? $url : 'https://disabled.invalid',
-                'apiKey' => preg_match('/^tal_(prod|stg|test|dev)_/', $apiKey)
-                    ? $apiKey
-                    : 'tal_dev_disabled_placeholder_key_xxxxxxxxxxxx',
                 'release' => is_string($config['release'] ?? null) && $config['release'] !== ''
                     ? $config['release']
                     : null,
@@ -68,6 +64,9 @@ final class TalariaServiceProvider extends ServiceProvider
                 'defaultIntegrations' => false,
                 'tags' => Config::normalizeTags($tags),
             ];
+            if ($url !== '') {
+                $options['url'] = $url;
+            }
 
             $transport = $app->bound(TransportInterface::class)
                 ? $app->make(TransportInterface::class)
@@ -76,9 +75,14 @@ final class TalariaServiceProvider extends ServiceProvider
                 ? $app->make(SpanTransportInterface::class)
                 : null;
 
-            if ($transport === null && ($url === '' || !preg_match('/^tal_(prod|stg|test|dev)_/', $apiKey))) {
-                $transport = new NullTransport();
-                $options['sampleRate'] = 0.0;
+            if ($apiKey === '') {
+                $options['apiKey'] = \Talaria\Credential::example('sk', 'dev', 'nz1');
+                $options['url'] = $options['url'] ?? 'https://ingest-nz1.newtalaria.com';
+                $options['remoteConfig'] = false;
+                $transport ??= new NullTransport();
+            } else {
+                \Talaria\Credential::parseApiKey($apiKey);
+                $options['apiKey'] = $apiKey;
             }
 
             $client = new TalariaClient($options, $transport, spanTransport: $spanTransport);

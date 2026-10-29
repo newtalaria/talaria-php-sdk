@@ -94,21 +94,25 @@ final class Config
      */
     public function __construct(array $options)
     {
-        $url = $options['url'] ?? null;
-        if (!is_string($url) || trim($url) === '') {
-            $url = 'https://ingest.newtalaria.com';
-        }
-
         $apiKey = $options['apiKey'] ?? '';
         if (!is_string($apiKey) || trim($apiKey) === '') {
             throw new \InvalidArgumentException('Talaria init requires apiKey.');
         }
-        if (!preg_match('/^tal_(prod|stg|test|dev)_/', $apiKey)) {
-            throw new \InvalidArgumentException('Talaria apiKey must start with tal_prod_, tal_stg_, tal_test_, or tal_dev_.');
+        $credential = Credential::parseApiKey($apiKey);
+        if ($credential->isPublishable()) {
+            Credential::warnPublishableOnce();
+        }
+
+        $url = $options['url'] ?? null;
+        if (!is_string($url) || trim($url) === '') {
+            $url = self::getEnv('TALARIA_URL') ?? '';
+        }
+        if (trim($url) === '') {
+            $url = $credential->ingestUrl();
         }
 
         $this->url = rtrim($url, '/');
-        $this->apiKey = trim($apiKey);
+        $this->apiKey = $credential->value;
         $identity = ReleaseIdentity::resolve(
             isset($options['release']) && is_string($options['release']) ? $options['release'] : null,
             isset($options['commitSha']) && is_string($options['commitSha']) ? $options['commitSha'] : null,

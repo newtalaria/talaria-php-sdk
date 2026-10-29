@@ -42,7 +42,7 @@ final class ExceptionPayloadTest extends TestCase
         self::assertArrayNotHasKey('function', $frames[0]);
         self::assertArrayNotHasKey('function', $frames[1]);
         self::assertSame('php', $frames[0]['platform']);
-        self::assertSame('StackFrameDto', $frames[0]['__className__']);
+        self::assertArrayNotHasKey('__className__', $frames[0]);
     }
 
     public function testVendorPathIsNotInApp(): void
@@ -77,7 +77,7 @@ final class ExceptionPayloadTest extends TestCase
         self::assertSame('/app/ThrowSite.php', $frames[0]['absPath']);
         self::assertSame(42, $frames[0]['lineno']);
         self::assertTrue($frames[0]['inApp']);
-        self::assertSame('StackFrameDto', $frames[0]['__className__']);
+        self::assertArrayNotHasKey('__className__', $frames[0]);
     }
 
     public function testThrowSiteNotDuplicatedWhenAlreadyLastFrame(): void
@@ -106,7 +106,7 @@ final class ExceptionPayloadTest extends TestCase
 
         $payload = ExceptionPayloadBuilder::fromThrowable($top);
 
-        self::assertSame('ExceptionDataDto', $payload['__className__']);
+        self::assertArrayNotHasKey('__className__', $payload);
         self::assertCount(3, $payload['values']);
 
         self::assertSame(\RuntimeException::class, $payload['values'][0]['type']);
@@ -118,12 +118,12 @@ final class ExceptionPayloadTest extends TestCase
         self::assertSame('top', $payload['values'][2]['value']);
 
         foreach ($payload['values'] as $value) {
-            self::assertSame('ExceptionValueDto', $value['__className__']);
-            self::assertSame('ExceptionMechanismDto', $value['mechanism']['__className__']);
+            self::assertArrayNotHasKey('__className__', $value);
+            self::assertArrayNotHasKey('__className__', $value['mechanism']);
             self::assertSame('generic', $value['mechanism']['type']);
             self::assertTrue($value['mechanism']['handled']);
             self::assertFalse($value['mechanism']['synthetic']);
-            self::assertSame('StackTraceDto', $value['stacktrace']['__className__']);
+            self::assertArrayNotHasKey('__className__', $value['stacktrace']);
             self::assertIsArray($value['stacktrace']['frames']);
         }
     }

@@ -23,7 +23,7 @@ final class BreadcrumbTest extends TestCase
         self::assertCount(BreadcrumbBuffer::MAX_OTHER, $snapshot);
         self::assertSame('crumb-25', $snapshot[0]['message']);
         self::assertSame('crumb-59', $snapshot[34]['message']);
-        self::assertSame('BreadcrumbDto', $snapshot[0]['__className__']);
+        self::assertArrayNotHasKey('__className__', $snapshot[0]);
     }
 
     public function testErrorEventReceivesCappedBreadcrumbsAndTraceIds(): void
@@ -32,7 +32,7 @@ final class BreadcrumbTest extends TestCase
         $spans = new FakeSpanTransport();
         $client = new TalariaClient([
             'url' => 'https://api.example.com',
-            'apiKey' => 'tal_prod_testkeytestkeytestkeytestkey123456',
+            'apiKey' => \Talaria\Credential::example(),
             'defaultIntegrations' => false,
             'enableTracing' => true,
             'tracesSampleRate' => 1.0,
@@ -72,7 +72,7 @@ final class BreadcrumbTest extends TestCase
         self::assertSame($root->traceId, $wire['traceId']);
         self::assertSame($root->spanId, $wire['spanId']);
         self::assertCount(BreadcrumbBuffer::MAX_QUERY, $wire['breadcrumbs']);
-        self::assertSame('BreadcrumbDto', $wire['breadcrumbs'][0]['__className__']);
+        self::assertArrayNotHasKey('__className__', $wire['breadcrumbs'][0]);
     }
 
     public function testInfoEventsDoNotAttachBreadcrumbs(): void
@@ -80,7 +80,7 @@ final class BreadcrumbTest extends TestCase
         $transport = new FakeTransport();
         $client = new TalariaClient([
             'url' => 'https://api.example.com',
-            'apiKey' => 'tal_prod_testkeytestkeytestkeytestkey123456',
+            'apiKey' => \Talaria\Credential::example(),
             'defaultIntegrations' => false,
             'maxBatchSize' => 1,
             'flushIntervalMs' => 60_000,

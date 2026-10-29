@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Talaria\Tests;
 
 use PHPUnit\Framework\TestCase;
+use Talaria\Credential;
 use Talaria\SilverStripe\Config;
 
 final class ConfigBrowserKeyTest extends TestCase
@@ -18,70 +19,84 @@ final class ConfigBrowserKeyTest extends TestCase
         parent::tearDown();
     }
 
-    public function testBrowserInjectUsesPhpKeyWhenBrowserKeyUnset(): void
+    public function testBrowserInjectRequiresPublishableKey(): void
     {
         $this->clearBrowserKeyEnv();
         $this->withConfig([
-            'apiKey' => 'tal_prod_php',
-            'browserApiKey' => '',
+            'apiKey' => Credential::example(),
+            'browser_api_key' => '',
             'url' => 'https://ingest.example.test',
         ], function (): void {
-            $frontend = Config::toBrowserOptions('silverstripe-frontend');
-            $cms = Config::toBrowserOptions('silverstripe-cms');
-
-            self::assertIsArray($frontend);
-            self::assertIsArray($cms);
-            self::assertSame('tal_prod_php', $frontend['apiKey']);
-            self::assertSame('tal_prod_php', $cms['apiKey']);
-            self::assertSame('tal_prod_php', Config::toClientOptions()['apiKey']);
+            self::assertNull(Config::toBrowserOptions('silverstripe-frontend'));
+            self::assertSame(Credential::example(), Config::toClientOptions()['apiKey']);
         });
     }
 
-    public function testBrowserInjectUsesSeparateKeyForCmsAndFrontend(): void
+    public function testBrowserInjectUsesPublishableKey(): void
     {
         $this->clearBrowserKeyEnv();
+        $pk = Credential::example('pk');
         $this->withConfig([
-            'apiKey' => 'tal_prod_php',
-            'browserApiKey' => 'tal_prod_browser',
+            'apiKey' => Credential::example(),
+            'browser_api_key' => $pk,
             'url' => 'https://ingest.example.test',
-        ], function (): void {
+        ], function () use ($pk): void {
             $frontend = Config::toBrowserOptions('silverstripe-frontend');
             $cms = Config::toBrowserOptions('silverstripe-cms');
 
             self::assertIsArray($frontend);
             self::assertIsArray($cms);
-            self::assertSame('tal_prod_browser', $frontend['apiKey']);
-            self::assertSame('tal_prod_browser', $cms['apiKey']);
-            self::assertSame('tal_prod_php', Config::toClientOptions()['apiKey']);
+            self::assertSame($pk, $frontend['apiKey']);
+            self::assertSame($pk, $cms['apiKey']);
+            self::assertSame('https://ingest.example.test', $frontend['url']);
+            self::assertSame(Credential::example(), Config::toClientOptions()['apiKey']);
         });
     }
 
     public function testBrowserKeyFromEnvWhenYamlPlaceholderIsEmpty(): void
     {
-        $this->setBrowserKeyEnv('tal_prod_from_env');
+        $pk = Credential::example('pk', 'prod', 'nz1');
+        $this->setBrowserKeyEnv($pk);
         $this->withConfig([
-            'apiKey' => 'tal_prod_php',
-            'browserApiKey' => '`TALARIA_BROWSER_API_KEY`',
+            'apiKey' => Credential::example(),
+            'browser_api_key' => '`TALARIA_BROWSER_API_KEY`',
             'url' => 'https://ingest.example.test',
-        ], function (): void {
+        ], function () use ($pk): void {
             $browser = Config::toBrowserOptions('silverstripe-frontend');
 
             self::assertIsArray($browser);
-            self::assertSame('tal_prod_from_env', $browser['apiKey']);
-            self::assertSame('tal_prod_php', Config::toClientOptions()['apiKey']);
+            self::assertSame($pk, $browser['apiKey']);
+            self::assertSame(Credential::example(), Config::toClientOptions()['apiKey']);
         });
     }
 
-    public function testInvalidBrowserKeyDisablesInjectAndLeavesPhpKey(): void
+    public function testSecretBrowserKeyDisablesInject(): void
     {
         $this->clearBrowserKeyEnv();
         $this->withConfig([
-            'apiKey' => 'tal_prod_php',
-            'browserApiKey' => 'not-a-project-key',
+            'apiKey' => Credential::example(),
+            'browser_api_key' => Credential::example(),
             'url' => 'https://ingest.example.test',
         ], function (): void {
             self::assertNull(Config::toBrowserOptions('silverstripe-frontend'));
-            self::assertSame('tal_prod_php', Config::toClientOptions()['apiKey']);
+            self::assertSame(Credential::example(), Config::toClientOptions()['apiKey']);
+        });
+    }
+
+    public function testBrowserUrlDerivesFromPublishableKey(): void
+    {
+        $this->clearBrowserKeyEnv();
+        $pk = Credential::example('pk', 'test', 'eu1');
+        $this->withConfig([
+            'apiKey' => Credential::example(),
+            'browser_api_key' => $pk,
+            'url' => '',
+        ], function () use ($pk): void {
+            $browser = Config::toBrowserOptions('silverstripe-frontend');
+
+            self::assertIsArray($browser);
+            self::assertSame($pk, $browser['apiKey']);
+            self::assertSame('https://ingest-eu1.newtalaria.com', $browser['url']);
         });
     }
 

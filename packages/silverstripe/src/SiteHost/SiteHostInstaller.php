@@ -61,9 +61,14 @@ final class SiteHostInstaller
             throw new SiteHostInstallException('SITEHOST_APP_PATH is required');
         }
 
+        $apiKey = trim((string) (getenv('TALARIA_API_KEY') ?: ''));
         $url = trim((string) (getenv('TALARIA_URL') ?: ''));
-        if ($url === '') {
-            $url = 'https://ingest.newtalaria.com';
+        if ($url === '' && $apiKey !== '') {
+            try {
+                $url = \Talaria\Credential::parseApiKey($apiKey)->ingestUrl();
+            } catch (\InvalidArgumentException $exception) {
+                throw new SiteHostInstallException($exception->getMessage());
+            }
         }
 
         return new self(
@@ -73,7 +78,7 @@ final class SiteHostInstaller
             (string) (getenv('SITEHOST_SUPERVISORD') ?: '/container/config/supervisord.conf'),
             $app . '/.talaria-monitor-tokens',
             $url,
-            trim((string) (getenv('TALARIA_API_KEY') ?: '')),
+            $apiKey,
             $transport ?? new PhpStreamCheckInTransport(),
             getenv('TALARIA_INSTALL_PROBE') === 'true',
         );
@@ -189,7 +194,7 @@ final class SiteHostInstaller
         $block = [self::CRON_BEGIN];
         foreach ($jobs as $job) {
             $token = $tokens[$job['slug']] ?? '';
-            if (preg_match('/^tal_mon_[A-Za-z0-9]+$/', $token) !== 1) {
+            if (!\Talaria\Credential::isMonitorToken($token)) {
                 throw new SiteHostInstallException('No monitor token for ' . $job['slug']);
             }
             $block[] = self::crontabLine($job['crontab'], $job['command'], $token, $baseUrl, $job['slug']);
@@ -272,7 +277,7 @@ final class SiteHostInstaller
         }
         $result = $this->transport->post($base . '/v1/monitors/' . rawurlencode($slug) . '/check-ins', $this->apiKey, $json);
         $token = self::monitorTokenFrom($result['body']);
-        if (preg_match('/^tal_mon_[A-Za-z0-9]+$/', $token) !== 1) {
+        if (!\Talaria\Credential::isMonitorToken($token)) {
             throw new SiteHostInstallException(
                 'Check-in for ' . $job['slug'] . ' failed: HTTP ' . $result['code'] . ' ' . self::errorDetail($result['body']),
             );
@@ -332,8 +337,13 @@ final class SiteHostInstaller
 
     private static function assertApiKey(string $apiKey): void
     {
-        if ($apiKey === '' || !preg_match('/^tal_(prod|stg|test|dev)_[A-Za-z0-9_]{30,}$/', $apiKey)) {
-            throw new SiteHostInstallException('Set TALARIA_URL and TALARIA_API_KEY to register check-ins');
+        try {
+            $credential = \Talaria\Credential::parseApiKey($apiKey);
+        } catch (\InvalidArgumentException) {
+            throw new SiteHostInstallException('Set TALARIA_URL and a tal_sk_ TALARIA_API_KEY to register check-ins');
+        }
+        if (!$credential->isSecret()) {
+            throw new SiteHostInstallException('Registering check-ins requires a tal_sk_ key with monitors:write');
         }
     }
 
@@ -427,7 +437,7 @@ final class SiteHostInstaller
         string $slug,
     ): string {
         $checkInUrl = $url . '/v1/check-ins';
-        $curl = "curl -fsS -m 15 -X POST -H 'X-Talaria-Monitor-Token: {$token}' -H 'Content-Type: application/json'";
+        $curl = "curl -fsS -m 15 -X POST -H 'Authorization: Bearer {$token}' -H 'Content-Type: application/json'";
 
         return $schedule . ' ' . $curl . " -d '{\"status\":\"in_progress\"}' '{$checkInUrl}'; "
             . $command . '; talaria_status=$?; if [ "$talaria_status" -eq 0 ]; then '
@@ -471,6 +481,12 @@ final class SiteHostInstaller
         if (is_array($inner) && is_string($inner['message'] ?? null)) {
             $message = $inner['message'];
         }
+        if ($message === '' && is_string($data['detail'] ?? null)) {
+            $message = $data['detail'];
+        }
+        if ($message === '' && is_string($data['code'] ?? null)) {
+            $message = $data['code'];
+        }
         if ($message === '' && is_string($data['message'] ?? null)) {
             $message = $data['message'];
         }
@@ -498,10 +514,17 @@ final class SiteHostInstaller
             if (trim($line) === '') {
                 continue;
             }
-            if (preg_match('/^([A-Za-z0-9][A-Za-z0-9_-]{0,80})=(tal_mon_[A-Za-z0-9]+)$/', trim($line), $match) !== 1) {
+            $line = trim($line);
+            $eq = strpos($line, '=');
+            if ($eq === false || $eq === 0) {
                 throw new SiteHostInstallException('The monitor token file has a line that is not slug=token');
             }
-            $tokens[$match[1]] = $match[2];
+            $slug = substr($line, 0, $eq);
+            $token = substr($line, $eq + 1);
+            if (preg_match('/^[A-Za-z0-9][A-Za-z0-9_-]{0,80}$/', $slug) !== 1 || !\Talaria\Credential::isMonitorToken($token)) {
+                throw new SiteHostInstallException('The monitor token file has a line that is not slug=token');
+            }
+            $tokens[$slug] = $token;
         }
 
         return $tokens;

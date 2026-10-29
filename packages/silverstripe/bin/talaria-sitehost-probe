@@ -20,14 +20,25 @@ foreach ($autoloadCandidates as $autoload) {
     }
 }
 
+$apiKey = (string) (getenv('TALARIA_API_KEY') ?: '');
+try {
+    $credential = \Talaria\Credential::parseApiKey($apiKey);
+} catch (\InvalidArgumentException $exception) {
+    fwrite(STDERR, 'talaria-sitehost-probe needs a tal_sk_ TALARIA_API_KEY: ' . $exception->getMessage() . "\n");
+    exit(1);
+}
+if (!$credential->isSecret()) {
+    fwrite(STDERR, "talaria-sitehost-probe needs a tal_sk_ TALARIA_API_KEY\n");
+    exit(1);
+}
 $baseUrl = rtrim((string) (getenv('TALARIA_URL') ?: ''), '/');
 if ($baseUrl === '') {
-    $baseUrl = 'https://ingest.newtalaria.com';
-}
-$apiKey = (string) (getenv('TALARIA_API_KEY') ?: '');
-if (!preg_match('/^tal_(prod|stg|test|dev)_/', $apiKey)) {
-    fwrite(STDERR, "talaria-sitehost-probe needs TALARIA_URL and TALARIA_API_KEY\n");
-    exit(1);
+    try {
+        $baseUrl = $credential->ingestUrl();
+    } catch (\InvalidArgumentException $exception) {
+        fwrite(STDERR, $exception->getMessage() . "\n");
+        exit(1);
+    }
 }
 
 $program = (string) (getenv('TALARIA_PROBE_PROGRAM') ?: 'cron');
@@ -112,13 +123,13 @@ function report(
     $context = stream_context_create([
         'http' => [
             'method' => 'POST',
-            'header' => "Content-Type: application/json\r\nX-API-Key: {$apiKey}\r\n",
+            'header' => "Content-Type: application/json\r\nAuthorization: Bearer {$apiKey}\r\n",
             'content' => $body,
             'timeout' => 10,
             'ignore_errors' => true,
         ],
     ]);
-    @file_get_contents($baseUrl . '/v1/check-ins', false, $context);
+    @file_get_contents($baseUrl . '/v1/monitors/' . rawurlencode($slug) . '/check-ins', false, $context);
 }
 
 /**
@@ -162,7 +173,7 @@ function emitMetrics(string $baseUrl, string $apiKey, array $resource): void
     $context = stream_context_create([
         'http' => [
             'method' => 'POST',
-            'header' => "Content-Type: application/json\r\nX-API-Key: {$apiKey}\r\n",
+            'header' => "Content-Type: application/json\r\nAuthorization: Bearer {$apiKey}\r\n",
             'content' => $body,
             'timeout' => 10,
             'ignore_errors' => true,

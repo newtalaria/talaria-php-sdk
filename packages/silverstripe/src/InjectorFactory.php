@@ -30,17 +30,16 @@ final class InjectorFactory implements Factory
         }
 
         $options = Config::toClientOptions();
-        $url = is_string($options['url'] ?? null) ? $options['url'] : '';
         $apiKey = is_string($options['apiKey'] ?? null) ? $options['apiKey'] : '';
 
-        if ($url === '' || $apiKey === '' || !preg_match('/^tal_(prod|stg|test|dev)_/', $apiKey)) {
-            error_log('[Talaria] Silverstripe client disabled — set TALARIA_URL and TALARIA_API_KEY.');
+        if ($apiKey === '') {
+            error_log('[Talaria] Silverstripe client disabled — set TALARIA_API_KEY.');
             self::$client = new TalariaClient(
                 [
-                    'url' => 'https://disabled.invalid',
-                    'apiKey' => 'tal_dev_disabled_placeholder_key_xxxxxxxxxxxx',
-                    'sampleRate' => 0.0,
+                    'url' => 'https://ingest-nz1.newtalaria.com',
+                    'apiKey' => \Talaria\Credential::example('sk', 'dev', 'nz1'),
                     'defaultIntegrations' => false,
+                    'remoteConfig' => false,
                 ],
                 new NullTransport(),
             );

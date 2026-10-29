@@ -24,14 +24,19 @@ composer require talaria/talaria
 use Talaria\Talaria;
 
 Talaria::init([
-    'dsn' => 'https://ingest.newtalaria.com',
     'apiKey' => getenv('TALARIA_API_KEY'),
     'release' => getenv('TALARIA_RELEASE') ?: null,
     'minLevel' => 'warning',
 ]);
 ```
 
-The API key decides the environment. Tracing, analytics, and sample rates follow Project settings. Omit `release` in GitHub Actions or GitLab and the SDK sends `<ref>@<shortsha>` from the job environment. See [Releases](https://www.newtalaria.com/docs/guides/releases).
+`TALARIA_API_KEY` is a secret `tal_sk_<env>_<cell>_<43 base62><6 CRC32 base62>` key. The SDK checks the grammar and checksum and refuses a bad key. A publishable `tal_pk_` key logs one warning: ingest and `POST /v1/flags/evaluate` work, but monitors, releases, and `GET /v1/flags` need a secret key.
+
+Leave `url` unset and the SDK sends to `https://ingest-<cell>.newtalaria.com` from the key. Set `url` or `TALARIA_URL` to override. A `self` cell has no cloud host, so it fails fast until a URL is set.
+
+Requests use `Authorization: Bearer`. Batches are plain JSON (`{"events":[…]}`, `{"spans":[…]}`) with no `input` wrapper. Errors are `application/problem+json`. Remote config is `GET /v1/sdk-config`. Discard reports go to `POST /v1/client-reports`.
+
+Tracing, analytics, and sample rates follow Project settings. Omit `release` in GitHub Actions or GitLab and the SDK sends `<ref>@<shortsha>` from the job environment. See [Releases](https://www.newtalaria.com/docs/guides/releases).
 
 ## Feature flags
 
@@ -40,7 +45,7 @@ Talaria::flags()->setContext(userId: $userId);
 $on = Talaria::flags()->boolVariation('new-checkout', false);
 ```
 
-Evaluations are cached for the PHP request (or until TTL on long-lived workers). Call `loadDefinitions()` with a server API key that has `flags:definitions` for local evaluation without per-request RTT.
+Evaluations are cached for the PHP request (or until TTL on long-lived workers). `POST /v1/flags/evaluate` accepts a `tal_pk_` or `tal_sk_` key. Call `loadDefinitions()` with a `tal_sk_` key that has `flags:read` (`GET /v1/flags`) for local evaluation without per-request RTT.
 
 **LaunchDarkly:** dual-running Talaria flags and LaunchDarkly in the same process is fine. Prefer one source of truth per flag key (or distinct namespaces) so evaluations do not collide. Mobile clients may not refresh while backgrounded.
 

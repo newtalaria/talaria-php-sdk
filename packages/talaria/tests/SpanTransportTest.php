@@ -28,7 +28,7 @@ final class SpanTransportTest extends TestCase
 
         $transport = new SpanTransport(
             'https://api.example.com/',
-            'tal_prod_abc',
+            \Talaria\Credential::example(),
             2.0,
             $http,
         );
@@ -54,25 +54,25 @@ final class SpanTransportTest extends TestCase
         $request = $history[0]['request'];
         self::assertSame('POST', $request->getMethod());
         self::assertSame('https://api.example.com/v1/spans', (string) $request->getUri());
-        self::assertSame('tal_prod_abc', $request->getHeaderLine('X-API-Key'));
+        self::assertSame('Bearer ' . \Talaria\Credential::example(), $request->getHeaderLine('Authorization'));
 
         /** @var array<string, mixed> $body */
         $body = json_decode((string) $request->getBody(), true, 512, JSON_THROW_ON_ERROR);
-        self::assertSame('IngestSpanBatchInput', $body['input']['__className__']);
-        self::assertCount(1, $body['input']['spans']);
-        self::assertSame('IngestSpanInput', $body['input']['spans'][0]['__className__']);
-        self::assertSame('GET /products', $body['input']['spans'][0]['name']);
-        self::assertSame('server', $body['input']['spans'][0]['kind']);
-        self::assertSame('4bf92f3577b34da6a3ce929d0e0e4736', $body['input']['spans'][0]['traceId']);
-        self::assertArrayNotHasKey('environment', $body['input']['spans'][0]);
-        self::assertArrayNotHasKey('parentSpanId', $body['input']['spans'][0]);
+        self::assertArrayNotHasKey('input', $body);
+        self::assertCount(1, $body['spans']);
+        self::assertArrayNotHasKey('__className__', $body['spans'][0]);
+        self::assertSame('GET /products', $body['spans'][0]['name']);
+        self::assertSame('server', $body['spans'][0]['kind']);
+        self::assertSame('4bf92f3577b34da6a3ce929d0e0e4736', $body['spans'][0]['traceId']);
+        self::assertArrayNotHasKey('environment', $body['spans'][0]);
+        self::assertArrayNotHasKey('parentSpanId', $body['spans'][0]);
     }
 
     public function testNonSuccessThrows(): void
     {
         $mock = new MockHandler([new Response(429, [], '{"message":"quota exceeded"}')]);
         $http = new GuzzleClient(['handler' => HandlerStack::create($mock)]);
-        $transport = new SpanTransport('https://api.example.com', 'tal_prod_abc', 2.0, $http);
+        $transport = new SpanTransport('https://api.example.com', \Talaria\Credential::example(), 2.0, $http);
 
         $span = new Span(
             traceId: str_repeat('a', 32),

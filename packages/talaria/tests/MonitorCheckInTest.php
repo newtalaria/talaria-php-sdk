@@ -17,11 +17,12 @@ final class MonitorCheckInTest extends TestCase
             'maxRuntimeSeconds' => 55,
         ]);
 
-        self::assertSame('CheckInInput', $payload['input']['__className__']);
-        self::assertSame('process-job-queue', $payload['input']['slug']);
-        self::assertSame('in_progress', $payload['input']['status']);
-        self::assertSame('Pacific/Auckland', $payload['input']['timezone']);
-        self::assertSame(55, $payload['input']['maxRuntimeSeconds']);
-        self::assertArrayNotHasKey('logTail', $payload['input']);
+        self::assertArrayNotHasKey('input', $payload);
+        self::assertArrayNotHasKey('__className__', $payload);
+        self::assertSame('process-job-queue', $payload['slug']);
+        self::assertSame('in_progress', $payload['status']);
+        self::assertSame('Pacific/Auckland', $payload['timezone']);
+        self::assertSame(55, $payload['maxRuntimeSeconds']);
+        self::assertArrayNotHasKey('logTail', $payload);
     }
 }

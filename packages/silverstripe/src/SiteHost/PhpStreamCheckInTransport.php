@@ -11,7 +11,7 @@ final class PhpStreamCheckInTransport implements CheckInTransport
         $context = stream_context_create([
             'http' => [
                 'method' => 'POST',
-                'header' => "Content-Type: application/json\r\nX-API-Key: {$apiKey}\r\n",
+                'header' => "Content-Type: application/json\r\nAuthorization: Bearer {$apiKey}\r\n",
                 'content' => $json,
                 'timeout' => 20,
                 'ignore_errors' => true,

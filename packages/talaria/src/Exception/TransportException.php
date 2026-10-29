@@ -18,6 +18,8 @@ final class TransportException extends \RuntimeException
         public readonly ?string $className = null,
         public readonly ?bool $retry = null,
         public readonly ?string $bodyMessage = null,
+        public readonly ?string $problemCode = null,
+        public readonly ?string $requestId = null,
     ) {
         parent::__construct($message, 0, $previous);
     }
@@ -28,24 +30,19 @@ final class TransportException extends \RuntimeException
             className: $this->className,
             message: $this->bodyMessage ?? $this->getMessage(),
             retry: $this->retry,
+            code: $this->problemCode,
+            status: $this->statusCode,
+            requestId: $this->requestId,
         );
     }
 
     public function isPermanent(): bool
     {
-        return (new IngestError(
-            className: $this->className,
-            message: $this->bodyMessage ?? $this->getMessage(),
-            retry: $this->retry,
-        ))->isPermanent();
+        return $this->ingestError()->isPermanent();
     }
 
     public function isScopeOnly(): bool
     {
-        return (new IngestError(
-            className: $this->className,
-            message: $this->bodyMessage ?? $this->getMessage(),
-            retry: $this->retry,
-        ))->isScopeOnly();
+        return $this->ingestError()->isScopeOnly();
     }
 }

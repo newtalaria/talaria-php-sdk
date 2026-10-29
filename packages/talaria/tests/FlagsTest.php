@@ -16,7 +16,7 @@ final class FlagsTest extends TestCase
     {
         $config = new Config([
             'url' => 'https://example.test',
-            'apiKey' => 'tal_prod_testkey',
+            'apiKey' => \Talaria\Credential::example(),
         ]);
         $config->enableFlags = false;
         $flags = new Flags($config, new Identity(anonymousId: 'a1'), static fn () => null);
@@ -30,7 +30,7 @@ final class FlagsTest extends TestCase
     {
         $config = new Config([
             'url' => 'https://example.test',
-            'apiKey' => 'tal_prod_testkey',
+            'apiKey' => \Talaria\Credential::example(),
         ]);
         $config->enableFlags = true;
 
@@ -58,6 +58,11 @@ final class FlagsTest extends TestCase
                     ],
                 ];
             }
+
+            public function getJson(string $path, float $timeoutSeconds = 0.2): array
+            {
+                return [];
+            }
         };
 
         $flags = new Flags(
@@ -69,9 +74,11 @@ final class FlagsTest extends TestCase
         self::assertTrue($flags->boolVariation('demo-kill-switch', false));
         self::assertTrue($flags->boolVariation('demo-kill-switch', false));
         self::assertSame(1, $http->calls);
-        self::assertSame('flags/evaluate', $http->lastPath);
-        self::assertSame('EvaluateFlagsInput', $http->lastJson['input']['__className__'] ?? null);
-        self::assertSame('anon-1', $http->lastJson['input']['anonymousId'] ?? null);
+        self::assertSame('v1/flags/evaluate', $http->lastPath);
+        self::assertArrayNotHasKey('input', $http->lastJson ?? []);
+        self::assertArrayNotHasKey('__className__', $http->lastJson ?? []);
+        self::assertSame('anon-1', $http->lastJson['anonymousId'] ?? null);
+        self::assertNotSame('', $http->lastJson['sessionId'] ?? '');
         self::assertSame(
             ['flag.demo-kill-switch' => 'on'],
             $flags->stampTags(),
@@ -82,7 +89,7 @@ final class FlagsTest extends TestCase
     {
         $config = new Config([
             'url' => 'https://example.test',
-            'apiKey' => 'tal_prod_testkey',
+            'apiKey' => \Talaria\Credential::example(),
         ]);
         $config->enableFlags = true;
 
@@ -90,6 +97,11 @@ final class FlagsTest extends TestCase
             public ?string $lastPath = null;
 
             public function postJson(string $path, array $json, float $timeoutSeconds = 0.2): array
+            {
+                return [];
+            }
+
+            public function getJson(string $path, float $timeoutSeconds = 0.2): array
             {
                 $this->lastPath = $path;
 
@@ -125,7 +137,7 @@ final class FlagsTest extends TestCase
             static fn () => $http,
         );
         $flags->loadDefinitions();
-        self::assertSame('flags/downloadDefinitions', $http->lastPath);
+        self::assertSame('v1/flags', $http->lastPath);
         self::assertTrue($flags->isLocalMode());
         self::assertTrue($flags->boolVariation('new-checkout', false));
     }
@@ -134,7 +146,7 @@ final class FlagsTest extends TestCase
     {
         $config = new Config([
             'url' => 'https://example.test',
-            'apiKey' => 'tal_prod_testkey',
+            'apiKey' => \Talaria\Credential::example(),
         ]);
         self::assertFalse($config->enableFlags);
         $config->applySdkDocument([

@@ -3,7 +3,8 @@
 declare(strict_types=1);
 
 return [
-    'url' => env('TALARIA_URL', 'https://ingest.newtalaria.com'),
+    // Empty means the SDK derives https://ingest-<cell>.newtalaria.com from the key.
+    'url' => env('TALARIA_URL'),
     'api_key' => env('TALARIA_API_KEY'),
     'release' => env('TALARIA_RELEASE'),
     'commit_sha' => env('TALARIA_COMMIT_SHA'),

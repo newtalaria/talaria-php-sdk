@@ -210,7 +210,6 @@ final class Span
     public function toWire(): array
     {
         $wire = [
-            '__className__' => 'IngestSpanInput',
             'traceId' => $this->traceId,
             'spanId' => $this->spanId,
             'name' => $this->name,

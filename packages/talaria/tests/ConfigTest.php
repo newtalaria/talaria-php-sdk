@@ -41,7 +41,7 @@ final class ConfigTest extends TestCase
     {
         $cfg = new Config([
             'url' => 'https://api.example.com',
-            'apiKey' => 'tal_prod_testkeytestkeytestkeytestkey123456',
+            'apiKey' => \Talaria\Credential::example(),
         ]);
 
         self::assertFalse($cfg->enableAnalytics);
@@ -51,7 +51,7 @@ final class ConfigTest extends TestCase
     {
         $cfg = new Config([
             'url' => 'https://api.example.com',
-            'apiKey' => 'tal_prod_testkeytestkeytestkeytestkey123456',
+            'apiKey' => \Talaria\Credential::example(),
             'enableAnalytics' => false,
         ]);
 
