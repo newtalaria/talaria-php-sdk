@@ -68,8 +68,7 @@ final class Config
 
     /**
      * @param array{
-     *   dsn?: string,
-     *   baseUrl?: string,
+     *   url: string,
      *   apiKey: string,
      *   release?: string|null,
      *   commitSha?: string|null,
@@ -95,17 +94,26 @@ final class Config
      */
     public function __construct(array $options)
     {
-        $baseUrl = $options['dsn'] ?? $options['baseUrl'] ?? null;
+        $baseUrl = $options['url'] ?? $_ENV['TALARIA_URL'] ?? $_SERVER['TALARIA_URL'] ?? getenv('TALARIA_URL') ?: 'https://ingest.newtalaria.com';
         if (!is_string($baseUrl) || trim($baseUrl) === '') {
-            throw new \InvalidArgumentException('Talaria init requires dsn or baseUrl.');
+            throw new \InvalidArgumentException('Talaria init requires url (or TALARIA_URL env var).');
         }
 
         $apiKey = $options['apiKey'] ?? '';
         if (!is_string($apiKey) || trim($apiKey) === '') {
             throw new \InvalidArgumentException('Talaria init requires apiKey.');
         }
-        if (!str_starts_with($apiKey, 'tal_live_')) {
-            throw new \InvalidArgumentException('Talaria apiKey must start with tal_live_.');
+        
+        $validPrefixes = ['tal_prod_', 'tal_stg_', 'tal_test_', 'tal_dev_'];
+        $hasValidPrefix = false;
+        foreach ($validPrefixes as $prefix) {
+            if (str_starts_with($apiKey, $prefix)) {
+                $hasValidPrefix = true;
+                break;
+            }
+        }
+        if (!$hasValidPrefix) {
+            throw new \InvalidArgumentException('Talaria apiKey must start with tal_prod_, tal_stg_, tal_test_, or tal_dev_.');
         }
 
         $this->baseUrl = rtrim($baseUrl, '/');
@@ -131,7 +139,10 @@ final class Config
         $this->sessionId = isset($options['sessionId']) && is_string($options['sessionId']) && $options['sessionId'] !== ''
             ? $options['sessionId']
             : null;
-        $this->tags = self::normalizeTags($options['tags'] ?? []);
+        
+        $tags = $options['tags'] ?? [];
+        $tags = self::mergeOtelTags($tags);
+        $this->tags = self::normalizeTags($tags);
         $this->httpTimeoutSeconds = max(0.5, (float) ($options['httpTimeoutSeconds'] ?? 3.0));
 
         $minLevelRaw = $options['minLevel'] ?? SeverityLevel::Debug;
@@ -266,6 +277,42 @@ final class Config
             unset($tags['platform']);
         }
 
+        return $tags;
+    }
+    
+    /**
+     * Merge OTEL_* environment variables into tags following precedence:
+     * code (passed tags) > OTEL_* > defaults
+     *
+     * @param array<string, string> $tags
+     * @return array<string, string>
+     */
+    private static function mergeOtelTags(array $tags): array
+    {
+        $otelServiceName = $_ENV['OTEL_SERVICE_NAME'] ?? $_SERVER['OTEL_SERVICE_NAME'] ?? getenv('OTEL_SERVICE_NAME');
+        if (is_string($otelServiceName) && trim($otelServiceName) !== '' && !isset($tags['service.name'])) {
+            $tags['service.name'] = trim($otelServiceName);
+        }
+        
+        $otelResourceAttrs = $_ENV['OTEL_RESOURCE_ATTRIBUTES'] ?? $_SERVER['OTEL_RESOURCE_ATTRIBUTES'] ?? getenv('OTEL_RESOURCE_ATTRIBUTES');
+        if (is_string($otelResourceAttrs) && trim($otelResourceAttrs) !== '') {
+            $pairs = explode(',', $otelResourceAttrs);
+            foreach ($pairs as $pair) {
+                $pair = trim($pair);
+                if ($pair === '') {
+                    continue;
+                }
+                $parts = explode('=', $pair, 2);
+                if (count($parts) === 2) {
+                    $key = trim($parts[0]);
+                    $value = trim($parts[1]);
+                    if ($key !== '' && $value !== '' && !isset($tags[$key])) {
+                        $tags[$key] = $value;
+                    }
+                }
+            }
+        }
+        
         return $tags;
     }
 }

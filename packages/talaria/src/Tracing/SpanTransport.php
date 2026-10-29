@@ -48,7 +48,7 @@ final class SpanTransport implements SpanTransportInterface
             ],
         ];
 
-        $url = rtrim($this->baseUrl, '/') . '/spans/ingestBatch';
+        $url = rtrim($this->baseUrl, '/') . '/v1/spans';
 
         try {
             $response = $this->http->request('POST', $url, [
@@ -70,8 +70,8 @@ final class SpanTransport implements SpanTransportInterface
             $parsed = IngestError::parse($body);
             $detail = self::formatErrorDetail($body, $parsed);
             $prefix = $status !== null
-                ? "Talaria spans/ingestBatch failed: HTTP {$status}"
-                : 'Talaria spans/ingestBatch failed: ' . $e->getMessage();
+                ? "Talaria /v1/spans failed: HTTP {$status}"
+                : 'Talaria /v1/spans failed: ' . $e->getMessage();
             throw new TransportException(
                 $prefix . ($detail !== '' ? " — {$detail}" : ''),
                 $status,
@@ -92,7 +92,7 @@ final class SpanTransport implements SpanTransportInterface
         $detail = self::formatErrorDetail($body, $parsed);
 
         throw new TransportException(
-            "Talaria spans/ingestBatch failed: HTTP {$status}" . ($detail !== '' ? " — {$detail}" : ''),
+            "Talaria /v1/spans failed: HTTP {$status}" . ($detail !== '' ? " — {$detail}" : ''),
             $status,
             className: $parsed->className,
             retry: $parsed->retry,

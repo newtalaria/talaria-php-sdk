@@ -905,8 +905,8 @@ final class TalariaClient
         }
 
         return $this->httpTransport->postJson(
-            'monitors/checkIn',
-            MonitorCheckIn::payload($slug, $status, $schedule),
+            'v1/monitors/' . rawurlencode($slug) . '/check-ins',
+            MonitorCheckIn::payload($status, $schedule),
             max(2.0, $this->config->httpTimeoutSeconds),
         );
     }

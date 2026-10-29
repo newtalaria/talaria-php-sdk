@@ -22,11 +22,10 @@ final class MonitorCheckIn
      * } $schedule
      * @return array<string, mixed>
      */
-    public static function payload(string $slug, string $status, array $schedule = []): array
+    public static function payload(string $status, array $schedule = []): array
     {
         $input = [
             '__className__' => 'CheckInInput',
-            'slug' => $slug,
             'status' => $status,
         ];
         foreach ([

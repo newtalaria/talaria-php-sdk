@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 return [
-    'dsn' => env('TALARIA_DSN', 'https://ingest.newtalaria.com'),
+    'url' => env('TALARIA_URL', 'https://ingest.newtalaria.com'),
     'api_key' => env('TALARIA_API_KEY'),
     'release' => env('TALARIA_RELEASE'),
     'commit_sha' => env('TALARIA_COMMIT_SHA'),
@@ -18,6 +18,6 @@ return [
     // still wait for the project config. Set TALARIA_BROWSER=false to skip.
     'browser' => filter_var(env('TALARIA_BROWSER', true), FILTER_VALIDATE_BOOLEAN),
     'browser_sdk_version' => env('TALARIA_BROWSER_SDK_VERSION', '0.5.3'),
-    'browser_dsn' => env('TALARIA_BROWSER_DSN'),
+    'browser_url' => env('TALARIA_BROWSER_URL'),
     'browser_api_key' => env('TALARIA_BROWSER_API_KEY'),
 ];

@@ -20,10 +20,20 @@ foreach ($autoloadCandidates as $autoload) {
     }
 }
 
-$baseUrl = rtrim((string) (getenv('TALARIA_DSN') ?: getenv('TALARIA_BASE_URL') ?: ''), '/');
+$baseUrl = rtrim((string) (getenv('TALARIA_URL') ?: ''), '/');
 $apiKey = (string) (getenv('TALARIA_API_KEY') ?: '');
-if ($baseUrl === '' || !str_starts_with($apiKey, 'tal_live_')) {
-    fwrite(STDERR, "talaria-sitehost-probe needs TALARIA_DSN and TALARIA_API_KEY\n");
+
+$validPrefixes = ['tal_prod_', 'tal_stg_', 'tal_test_', 'tal_dev_'];
+$hasValidPrefix = false;
+foreach ($validPrefixes as $prefix) {
+    if (str_starts_with($apiKey, $prefix)) {
+        $hasValidPrefix = true;
+        break;
+    }
+}
+
+if ($baseUrl === '' || !$hasValidPrefix) {
+    fwrite(STDERR, "talaria-sitehost-probe needs TALARIA_URL and TALARIA_API_KEY with valid prefix (tal_prod_, tal_stg_, tal_test_, or tal_dev_)\n");
     exit(1);
 }
 
@@ -102,7 +112,7 @@ function report(
     if ($logTail !== null) {
         $schedule['logTail'] = $logTail;
     }
-    $body = json_encode(\Talaria\Monitor\MonitorCheckIn::payload($slug, $status, $schedule));
+    $body = json_encode(\Talaria\Monitor\MonitorCheckIn::payload($status, $schedule));
     if (!is_string($body)) {
         return;
     }
@@ -115,7 +125,7 @@ function report(
             'ignore_errors' => true,
         ],
     ]);
-    @file_get_contents($baseUrl . '/monitors/checkIn', false, $context);
+    @file_get_contents($baseUrl . '/v1/monitors/' . rawurlencode($slug) . '/check-ins', false, $context);
 }
 
 /**

@@ -11,18 +11,19 @@ use Talaria\Config as SdkConfig;
  * YAML / env-backed configuration for the Silverstripe adapter.
  *
  * Prefer environment variables:
- * - TALARIA_API_KEY
- * - TALARIA_DSN (optional; defaults to https://ingest.newtalaria.com)
- * - TALARIA_BROWSER_DSN (optional; browser inject only — use when PHP DSN is not browser-reachable, e.g. http://host.docker.internal behind an HTTPS site)
+ * - TALARIA_API_KEY (required)
+ * - TALARIA_URL (optional; defaults to https://ingest.newtalaria.com)
  * - TALARIA_BROWSER_API_KEY (optional; browser inject only — CMS and public pages use this project; PHP keeps TALARIA_API_KEY)
  * - TALARIA_RELEASE (optional)
  * - TALARIA_COMMIT_SHA (optional)
+ * - OTEL_SERVICE_NAME (optional; sets service.name tag)
+ * - OTEL_RESOURCE_ATTRIBUTES (optional; comma-separated key=value pairs)
  */
 class Config
 {
     use Configurable;
 
-    private const DEFAULT_DSN = 'https://ingest.newtalaria.com';
+    private const DEFAULT_URL = 'https://ingest.newtalaria.com';
 
     /**
      * @return array<string, mixed>
@@ -31,17 +32,17 @@ class Config
     {
         $cfg = static::config();
 
-        $dsn = self::resolveString($cfg->get('dsn') ?? '');
+        $url = self::resolveString($cfg->get('url') ?? '');
         $apiKey = self::resolveString($cfg->get('apiKey') ?? '');
         $release = self::resolveString($cfg->get('release') ?? '');
         $commitSha = self::resolveString($cfg->get('commitSha') ?? '');
         $service = self::resolveString($cfg->get('service') ?? '');
 
-        if ($dsn === '') {
-            $dsn = self::env('TALARIA_DSN');
+        if ($url === '') {
+            $url = self::env('TALARIA_URL');
         }
-        if ($dsn === '') {
-            $dsn = self::DEFAULT_DSN;
+        if ($url === '') {
+            $url = self::DEFAULT_URL;
         }
         if ($apiKey === '') {
             $apiKey = self::env('TALARIA_API_KEY');
@@ -54,7 +55,7 @@ class Config
         }
 
         $options = [
-            'dsn' => $dsn,
+            'url' => $url,
             'apiKey' => $apiKey,
             'maxBatchSize' => (int) ($cfg->get('maxBatchSize') ?? 50),
             'flushIntervalMs' => (int) ($cfg->get('flushIntervalMs') ?? 2000),
@@ -108,10 +109,19 @@ class Config
     public static function toBrowserOptions(string $runtimeTag, array $extraTags = []): ?array
     {
         $options = self::toClientOptions();
-        $dsn = self::resolveBrowserDsn($options);
+        $url = self::resolveBrowserUrl($options);
         $apiKey = self::resolveBrowserApiKey($options);
 
-        if ($dsn === '' || $apiKey === '' || !str_starts_with($apiKey, 'tal_live_')) {
+        $validPrefixes = ['tal_prod_', 'tal_stg_', 'tal_test_', 'tal_dev_'];
+        $hasValidPrefix = false;
+        foreach ($validPrefixes as $prefix) {
+            if (str_starts_with($apiKey, $prefix)) {
+                $hasValidPrefix = true;
+                break;
+            }
+        }
+
+        if ($url === '' || $apiKey === '' || !$hasValidPrefix) {
             return null;
         }
 
@@ -142,7 +152,7 @@ class Config
         }
 
         $browser = [
-            'dsn' => $dsn,
+            'dsn' => $url,
             'apiKey' => $apiKey,
             'minLevel' => self::minLevel(),
             'enforceDefaultLevel' => self::enforceDefaultLevel(),
@@ -176,23 +186,32 @@ class Config
     }
 
     /**
-     * Browser DSN: YAML/env `browserDsn` / TALARIA_BROWSER_DSN, else PHP client DSN.
+     * Browser URL: YAML/env `browserUrl`, else PHP client URL.
      *
+     * @param array<string, mixed> $clientOptions
+     */
+    private static function resolveBrowserUrl(array $clientOptions): string
+    {
+        $browserUrl = self::resolveString(static::config()->get('browserUrl') ?? '');
+        if ($browserUrl === '') {
+            $browserUrl = self::env('TALARIA_BROWSER_URL');
+        }
+        if ($browserUrl !== '') {
+            return rtrim($browserUrl, '/');
+        }
+
+        $url = is_string($clientOptions['url'] ?? null) ? $clientOptions['url'] : '';
+
+        return $url !== '' ? rtrim($url, '/') : '';
+    }
+
+    /**
+     * @deprecated Use resolveBrowserUrl instead
      * @param array<string, mixed> $clientOptions
      */
     private static function resolveBrowserDsn(array $clientOptions): string
     {
-        $browserDsn = self::resolveString(static::config()->get('browserDsn') ?? '');
-        if ($browserDsn === '') {
-            $browserDsn = self::env('TALARIA_BROWSER_DSN');
-        }
-        if ($browserDsn !== '') {
-            return rtrim($browserDsn, '/');
-        }
-
-        $dsn = is_string($clientOptions['dsn'] ?? null) ? $clientOptions['dsn'] : '';
-
-        return $dsn !== '' ? rtrim($dsn, '/') : '';
+        return self::resolveBrowserUrl($clientOptions);
     }
 
     /**

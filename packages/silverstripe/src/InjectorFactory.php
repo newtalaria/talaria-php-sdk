@@ -30,15 +30,24 @@ final class InjectorFactory implements Factory
         }
 
         $options = Config::toClientOptions();
-        $dsn = is_string($options['dsn'] ?? null) ? $options['dsn'] : '';
+        $url = is_string($options['url'] ?? null) ? $options['url'] : '';
         $apiKey = is_string($options['apiKey'] ?? null) ? $options['apiKey'] : '';
 
-        if ($dsn === '' || $apiKey === '' || !str_starts_with($apiKey, 'tal_live_')) {
-            error_log('[Talaria] Silverstripe client disabled — set TALARIA_DSN and TALARIA_API_KEY.');
+        $validPrefixes = ['tal_prod_', 'tal_stg_', 'tal_test_', 'tal_dev_'];
+        $hasValidPrefix = false;
+        foreach ($validPrefixes as $prefix) {
+            if (str_starts_with($apiKey, $prefix)) {
+                $hasValidPrefix = true;
+                break;
+            }
+        }
+
+        if ($url === '' || $apiKey === '' || !$hasValidPrefix) {
+            error_log('[Talaria] Silverstripe client disabled — set TALARIA_URL and TALARIA_API_KEY with valid prefix (tal_prod_, tal_stg_, tal_test_, or tal_dev_).');
             self::$client = new TalariaClient(
                 [
-                    'dsn' => 'https://disabled.invalid',
-                    'apiKey' => 'tal_live_disabled_placeholder_key_xxxxxxxxxxxx',
+                    'url' => 'https://disabled.invalid',
+                    'apiKey' => 'tal_dev_disabled_placeholder_key_xxxxxxxxxxxx',
                     'sampleRate' => 0.0,
                     'defaultIntegrations' => false,
                 ],

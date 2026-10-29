@@ -34,7 +34,7 @@ final class TalariaServiceProvider extends ServiceProvider
 
         $this->app->singleton(TalariaClient::class, function ($app): TalariaClient {
             $config = $app['config']->get('talaria', []);
-            $dsn = is_string($config['dsn'] ?? null) ? $config['dsn'] : '';
+            $url = is_string($config['url'] ?? null) ? $config['url'] : '';
             $apiKey = is_string($config['api_key'] ?? null) ? $config['api_key'] : '';
             $tags = [
                 'platform' => 'php',
@@ -48,11 +48,20 @@ final class TalariaServiceProvider extends ServiceProvider
                 $tags['runtime_version'] = $this->app->version();
             }
 
+            $validPrefixes = ['tal_prod_', 'tal_stg_', 'tal_test_', 'tal_dev_'];
+            $hasValidPrefix = false;
+            foreach ($validPrefixes as $prefix) {
+                if (str_starts_with($apiKey, $prefix)) {
+                    $hasValidPrefix = true;
+                    break;
+                }
+            }
+
             $options = [
-                'dsn' => $dsn !== '' ? $dsn : 'https://disabled.invalid',
-                'apiKey' => str_starts_with($apiKey, 'tal_live_')
+                'url' => $url !== '' ? $url : 'https://disabled.invalid',
+                'apiKey' => $hasValidPrefix
                     ? $apiKey
-                    : 'tal_live_disabled_placeholder_key_xxxxxxxxxxxx',
+                    : 'tal_dev_disabled_placeholder_key_xxxxxxxxxxxx',
                 'release' => is_string($config['release'] ?? null) && $config['release'] !== ''
                     ? $config['release']
                     : null,
@@ -76,7 +85,7 @@ final class TalariaServiceProvider extends ServiceProvider
                 ? $app->make(SpanTransportInterface::class)
                 : null;
 
-            if ($transport === null && ($dsn === '' || !str_starts_with($apiKey, 'tal_live_'))) {
+            if ($transport === null && ($url === '' || !$hasValidPrefix)) {
                 $transport = new NullTransport();
                 $options['sampleRate'] = 0.0;
             }

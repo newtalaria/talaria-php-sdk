@@ -67,7 +67,7 @@ final class SiteHostInstaller
             (string) (getenv('SITEHOST_CRONTAB') ?: '/container/crontabs/crontab'),
             (string) (getenv('SITEHOST_SUPERVISORD') ?: '/container/config/supervisord.conf'),
             $app . '/.talaria-monitor-tokens',
-            trim((string) (getenv('TALARIA_DSN') ?: getenv('TALARIA_BASE_URL') ?: '')),
+            trim((string) (getenv('TALARIA_URL') ?: '')),
             trim((string) (getenv('TALARIA_API_KEY') ?: '')),
             $transport ?? new PhpStreamCheckInTransport(),
             getenv('TALARIA_INSTALL_PROBE') === 'true',
@@ -260,15 +260,16 @@ final class SiteHostInstaller
         if ($job['maxRuntimeSeconds'] !== null) {
             $schedule['maxRuntimeSeconds'] = $job['maxRuntimeSeconds'];
         }
-        $json = json_encode(MonitorCheckIn::payload($job['slug'], 'ok', $schedule));
+        $slug = $job['slug'];
+        $json = json_encode(MonitorCheckIn::payload('ok', $schedule));
         if (!is_string($json)) {
-            throw new SiteHostInstallException('Could not encode the check-in for ' . $job['slug']);
+            throw new SiteHostInstallException('Could not encode the check-in for ' . $slug);
         }
-        $result = $this->transport->post($base . '/monitors/checkIn', $this->apiKey, $json);
+        $result = $this->transport->post($base . '/v1/monitors/' . rawurlencode($slug) . '/check-ins', $this->apiKey, $json);
         $token = self::pingTokenFrom($result['body']);
-        if (preg_match('/^tal_ping_[A-Za-z0-9]+$/', $token) !== 1) {
+        if (preg_match('/^tal_mon_[A-Za-z0-9]+$/', $token) !== 1) {
             throw new SiteHostInstallException(
-                'Check-in for ' . $job['slug'] . ' failed: HTTP ' . $result['code'] . ' ' . self::errorDetail($result['body']),
+                'Check-in for ' . $slug . ' failed: HTTP ' . $result['code'] . ' ' . self::errorDetail($result['body']),
             );
         }
 
@@ -327,7 +328,7 @@ final class SiteHostInstaller
     private static function assertApiKey(string $apiKey): void
     {
         if ($apiKey === '') {
-            throw new SiteHostInstallException('Set TALARIA_DSN and TALARIA_API_KEY to register check-ins');
+            throw new SiteHostInstallException('Set TALARIA_URL and TALARIA_API_KEY to register check-ins');
         }
     }
 
@@ -335,7 +336,7 @@ final class SiteHostInstaller
     {
         $base = rtrim(trim($dsn), '/');
         if (preg_match('#^https?://[^\'\s]+$#', $base) !== 1) {
-            throw new SiteHostInstallException('Set TALARIA_DSN and TALARIA_API_KEY to register check-ins');
+            throw new SiteHostInstallException('Set TALARIA_URL and TALARIA_API_KEY to register check-ins');
         }
 
         return $base;
@@ -449,12 +450,12 @@ final class SiteHostInstaller
         if (!is_array($data)) {
             return '';
         }
-        if (is_string($data['pingToken'] ?? null) && $data['pingToken'] !== '') {
-            return $data['pingToken'];
+        if (is_string($data['monitorToken'] ?? null) && $data['monitorToken'] !== '') {
+            return $data['monitorToken'];
         }
         $result = $data['result'] ?? null;
-        if (is_array($result) && is_string($result['pingToken'] ?? null)) {
-            return $result['pingToken'];
+        if (is_array($result) && is_string($result['monitorToken'] ?? null)) {
+            return $result['monitorToken'];
         }
 
         return '';
@@ -502,8 +503,8 @@ final class SiteHostInstaller
             if (trim($line) === '') {
                 continue;
             }
-            if (preg_match('/^([A-Za-z0-9][A-Za-z0-9_-]{0,80})=(tal_ping_[A-Za-z0-9]+)$/', trim($line), $match) !== 1) {
-                throw new SiteHostInstallException('The ping token file has a line that is not slug=token');
+            if (preg_match('/^([A-Za-z0-9][A-Za-z0-9_-]{0,80})=(tal_mon_[A-Za-z0-9]+)$/', trim($line), $match) !== 1) {
+                throw new SiteHostInstallException('The monitor token file has a line that is not slug=token');
             }
             $tokens[$match[1]] = $match[2];
         }
