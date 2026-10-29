@@ -8,7 +8,7 @@ use Talaria\Monitor\MonitorCheckIn;
 
 /**
  * Reconciles SiteHost crontab check-ins and the supervisord probe.
- * Cron still pings with curl. The deploy action owns the log collector.
+ * Cron sends check-ins with curl. The deploy action owns the log collector.
  */
 final class SiteHostInstaller
 {
@@ -184,8 +184,8 @@ final class SiteHostInstaller
         $block = [self::CRON_BEGIN];
         foreach ($jobs as $job) {
             $token = $tokens[$job['slug']] ?? '';
-            if (preg_match('/^tal_ping_[A-Za-z0-9]+$/', $token) !== 1) {
-                throw new SiteHostInstallException('No ping token for ' . $job['slug']);
+            if (preg_match('/^tal_mon_[A-Za-z0-9]+$/', $token) !== 1) {
+                throw new SiteHostInstallException('No monitor token for ' . $job['slug']);
             }
             $block[] = self::crontabLine($job['crontab'], $job['command'], $token, $baseUrl, $job['slug']);
         }
@@ -265,8 +265,8 @@ final class SiteHostInstaller
             throw new SiteHostInstallException('Could not encode the check-in for ' . $job['slug']);
         }
         $result = $this->transport->post($base . '/monitors/checkIn', $this->apiKey, $json);
-        $token = self::pingTokenFrom($result['body']);
-        if (preg_match('/^tal_ping_[A-Za-z0-9]+$/', $token) !== 1) {
+        $token = self::monitorTokenFrom($result['body']);
+        if (preg_match('/^tal_mon_[A-Za-z0-9]+$/', $token) !== 1) {
             throw new SiteHostInstallException(
                 'Check-in for ' . $job['slug'] . ' failed: HTTP ' . $result['code'] . ' ' . self::errorDetail($result['body']),
             );
@@ -430,16 +430,16 @@ final class SiteHostInstaller
         string $url,
         string $slug,
     ): string {
-        $ping = $url . '/monitors/ping';
-        $curl = "curl -fsS -m 15 -X POST -H 'X-Monitor-Token: {$token}' -H 'Content-Type: application/json'";
+        $checkInUrl = $url . '/v1/check-ins';
+        $curl = "curl -fsS -m 15 -X POST -H 'X-Talaria-Monitor-Token: {$token}' -H 'Content-Type: application/json'";
 
-        return $schedule . ' ' . $curl . " -d '{\"status\":\"in_progress\"}' '{$ping}'; "
+        return $schedule . ' ' . $curl . " -d '{\"status\":\"in_progress\"}' '{$checkInUrl}'; "
             . $command . '; talaria_status=$?; if [ "$talaria_status" -eq 0 ]; then '
-            . $curl . " -d '{\"status\":\"ok\"}' '{$ping}'; else "
-            . $curl . " -d '{\"status\":\"error\"}' '{$ping}'; fi; exit \"\$talaria_status\" # talaria-monitor:{$slug}";
+            . $curl . " -d '{\"status\":\"ok\"}' '{$checkInUrl}'; else "
+            . $curl . " -d '{\"status\":\"error\"}' '{$checkInUrl}'; fi; exit \"\$talaria_status\" # talaria-monitor:{$slug}";
     }
 
-    private static function pingTokenFrom(string $body): string
+    private static function monitorTokenFrom(string $body): string
     {
         try {
             $data = json_decode($body, true, 32, JSON_THROW_ON_ERROR);
@@ -449,12 +449,12 @@ final class SiteHostInstaller
         if (!is_array($data)) {
             return '';
         }
-        if (is_string($data['pingToken'] ?? null) && $data['pingToken'] !== '') {
-            return $data['pingToken'];
+        if (is_string($data['monitorToken'] ?? null) && $data['monitorToken'] !== '') {
+            return $data['monitorToken'];
         }
         $result = $data['result'] ?? null;
-        if (is_array($result) && is_string($result['pingToken'] ?? null)) {
-            return $result['pingToken'];
+        if (is_array($result) && is_string($result['monitorToken'] ?? null)) {
+            return $result['monitorToken'];
         }
 
         return '';
@@ -502,8 +502,8 @@ final class SiteHostInstaller
             if (trim($line) === '') {
                 continue;
             }
-            if (preg_match('/^([A-Za-z0-9][A-Za-z0-9_-]{0,80})=(tal_ping_[A-Za-z0-9]+)$/', trim($line), $match) !== 1) {
-                throw new SiteHostInstallException('The ping token file has a line that is not slug=token');
+            if (preg_match('/^([A-Za-z0-9][A-Za-z0-9_-]{0,80})=(tal_mon_[A-Za-z0-9]+)$/', trim($line), $match) !== 1) {
+                throw new SiteHostInstallException('The monitor token file has a line that is not slug=token');
             }
             $tokens[$match[1]] = $match[2];
         }
