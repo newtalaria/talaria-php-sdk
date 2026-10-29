@@ -70,8 +70,8 @@ final class ServerpodHttpTransportTest extends TestCase
         $transport = new ServerpodHttpTransport('https://ingest-nz1.newtalaria.com', \Talaria\Credential::example(), 2.0, $http);
 
         $transport->postClientReport([
-            'discardedEvents' => [
-                ['reason' => 'sample_rate', 'category' => 'error', 'quantity' => 2],
+            'discards' => [
+                ['signal' => 'error', 'reason' => 'sample_rate', 'count' => 2],
             ],
         ]);
 
@@ -79,10 +79,17 @@ final class ServerpodHttpTransportTest extends TestCase
         self::assertSame('POST', $request->getMethod());
         self::assertSame('https://ingest-nz1.newtalaria.com/v1/client-reports', (string) $request->getUri());
         self::assertSame('Bearer ' . \Talaria\Credential::example(), $request->getHeaderLine('Authorization'));
+        self::assertSame(
+            '{"discards":[{"signal":"error","reason":"sample_rate","count":2}]}',
+            (string) $request->getBody(),
+        );
         /** @var array<string, mixed> $body */
         $body = json_decode((string) $request->getBody(), true, 512, JSON_THROW_ON_ERROR);
         self::assertArrayNotHasKey('input', $body);
-        self::assertSame(2, $body['discardedEvents'][0]['quantity']);
+        self::assertArrayNotHasKey('discardedEvents', $body);
+        self::assertSame('error', $body['discards'][0]['signal']);
+        self::assertSame('sample_rate', $body['discards'][0]['reason']);
+        self::assertSame(2, $body['discards'][0]['count']);
     }
 
     public function testNonSuccessThrows(): void
