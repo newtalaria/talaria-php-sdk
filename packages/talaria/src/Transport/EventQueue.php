@@ -8,7 +8,7 @@ use Talaria\Event;
 use Talaria\Exception\TransportException;
 
 /**
- * In-memory queue that drains via ingestBatch on size or age thresholds.
+ * In-memory queue that drains via /v1/events on size or age thresholds.
  *
  * @phpstan-type ClockCallable callable(): float
  * @phpstan-type ErrorHandlerCallable callable(TransportException): void

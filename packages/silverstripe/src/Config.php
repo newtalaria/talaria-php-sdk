@@ -13,7 +13,6 @@ use Talaria\Config as SdkConfig;
  * Prefer environment variables:
  * - TALARIA_API_KEY
  * - TALARIA_URL (optional; defaults to https://ingest.newtalaria.com)
- * - TALARIA_BROWSER_URL (optional; browser inject only — use when PHP URL is not browser-reachable, e.g. http://host.docker.internal behind an HTTPS site)
  * - TALARIA_BROWSER_API_KEY (optional; browser inject only — CMS and public pages use this project; PHP keeps TALARIA_API_KEY)
  * - TALARIA_RELEASE (optional)
  * - TALARIA_COMMIT_SHA (optional)
@@ -176,20 +175,12 @@ class Config
     }
 
     /**
-     * Browser URL: YAML/env `browserUrl` / TALARIA_BROWSER_URL, else PHP client URL.
+     * Browser URL: always uses the PHP client URL per TIS N2.
      *
      * @param array<string, mixed> $clientOptions
      */
     private static function resolveBrowserUrl(array $clientOptions): string
     {
-        $browserUrl = self::resolveString(static::config()->get('browserUrl') ?? '');
-        if ($browserUrl === '') {
-            $browserUrl = self::env('TALARIA_BROWSER_URL');
-        }
-        if ($browserUrl !== '') {
-            return rtrim($browserUrl, '/');
-        }
-
         $url = is_string($clientOptions['url'] ?? null) ? $clientOptions['url'] : '';
 
         return $url !== '' ? rtrim($url, '/') : '';

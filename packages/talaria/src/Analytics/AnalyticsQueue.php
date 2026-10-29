@@ -7,7 +7,7 @@ namespace Talaria\Analytics;
 use Talaria\Exception\TransportException;
 
 /**
- * In-memory queue that drains via analytics/ingestBatch on size or age thresholds.
+ * In-memory queue that drains via /v1/analytics on size or age thresholds.
  *
  * @phpstan-type ClockCallable callable(): float
  * @phpstan-type ErrorHandlerCallable callable(TransportException): void

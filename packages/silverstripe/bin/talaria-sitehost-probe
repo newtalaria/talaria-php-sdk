@@ -20,10 +20,13 @@ foreach ($autoloadCandidates as $autoload) {
     }
 }
 
-$baseUrl = rtrim((string) (getenv('TALARIA_DSN') ?: getenv('TALARIA_BASE_URL') ?: ''), '/');
+$baseUrl = rtrim((string) (getenv('TALARIA_URL') ?: ''), '/');
+if ($baseUrl === '') {
+    $baseUrl = 'https://ingest.newtalaria.com';
+}
 $apiKey = (string) (getenv('TALARIA_API_KEY') ?: '');
-if ($baseUrl === '' || !str_starts_with($apiKey, 'tal_live_')) {
-    fwrite(STDERR, "talaria-sitehost-probe needs TALARIA_DSN and TALARIA_API_KEY\n");
+if (!preg_match('/^tal_(prod|stg|test|dev)_/', $apiKey)) {
+    fwrite(STDERR, "talaria-sitehost-probe needs TALARIA_URL and TALARIA_API_KEY\n");
     exit(1);
 }
 
@@ -115,7 +118,7 @@ function report(
             'ignore_errors' => true,
         ],
     ]);
-    @file_get_contents($baseUrl . '/monitors/checkIn', false, $context);
+    @file_get_contents($baseUrl . '/v1/monitors/' . rawurlencode($slug) . '/check-ins', false, $context);
 }
 
 /**

@@ -11,7 +11,7 @@ use Talaria\Event;
 use Talaria\Exception\TransportException;
 
 /**
- * Minimal Serverpod RPC client for events/ingestBatch.
+ * HTTP transport for /v1/events batch ingest.
  */
 final class ServerpodHttpTransport implements TransportInterface, \Talaria\Flags\FlagsHttpClient
 {

@@ -11,7 +11,7 @@ use Talaria\Exception\TransportException;
 use Talaria\Transport\IngestError;
 
 /**
- * Minimal Serverpod RPC client for analytics/ingestBatch.
+ * HTTP transport for /v1/analytics batch ingest.
  *
  * Uses a dedicated Guzzle client — never the app HTTP stack — so ingest is
  * not recorded as a child span of the traced request.

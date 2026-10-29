@@ -915,7 +915,7 @@ final class TalariaClient
      * Clear per-request state on long-lived workers (Octane, Horizon, queue).
      *
      * Does not re-enable a process-level ingest kill switch, and does not
-     * change init options (dsn, sample rates, default tags).
+     * change init options (url, sample rates, default tags).
      */
     public function resetRequestState(): void
     {

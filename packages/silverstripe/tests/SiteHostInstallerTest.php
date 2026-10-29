@@ -69,13 +69,13 @@ CRON;
         self::assertStringContainsString('# talaria-sitehost retired * * * * * cd /container/application && vendor/bin/sake dev/tasks/ProcessJobQueueTask', $twice);
         self::assertStringContainsString('SomethingElse', $twice);
         self::assertDoesNotMatchRegularExpression('/^0 1 \* \* \* cd /m', $twice);
-        self::assertStringContainsString("https://api.newtalaria.com/v1/check-ins", $twice);
+        self::assertStringContainsString("https://api.newtalaria.com/v1/monitors/", $twice);
     }
 
     public function testExistingMonitorLinesFoldIntoOneBlock(): void
     {
         $jobs = [$this->jobs()[0]];
-        $existing = "* * * * * curl https://api.example/v1/check-ins; cd /container/application && vendor/bin/sake dev/tasks/ProcessJobQueueTask; exit 0 # talaria-monitor:process-job-queue\n";
+        $existing = "* * * * * curl https://api.example/v1/monitors/process-job-queue/check-ins; cd /container/application && vendor/bin/sake dev/tasks/ProcessJobQueueTask; exit 0 # talaria-monitor:process-job-queue\n";
         $once = SiteHostInstaller::reconcileCrontab($existing, $jobs, 'https://api.newtalaria.com', [
             'process-job-queue' => 'tal_mon_aaa',
         ]);
@@ -131,7 +131,7 @@ CRON;
         self::assertStringNotContainsString('[program:talaria-sitehost-probe]', (string) file_get_contents($supervisor));
     }
 
-    public function testSecondRunReusesPingToken(): void
+    public function testSecondRunReusesMonitorToken(): void
     {
         $this->writeSpec();
         $supervisor = $this->root . '/supervisor/supervisord.conf';
@@ -269,7 +269,7 @@ CRON;
             $this->root . '/supervisor/supervisord.conf',
             $this->root . '/app/.talaria-monitor-tokens',
             'https://api.newtalaria.com',
-            'tal_prod_test',
+            'tal_prod_testkeytestkeytestkeytestkey123456',
             $transport,
         );
     }

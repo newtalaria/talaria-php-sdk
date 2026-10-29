@@ -32,11 +32,7 @@ final class BrowserScript
             return null;
         }
 
-        $url = $this->stringConfig('talaria.browser_url');
-        if ($url === '') {
-            $url = $this->stringConfig('talaria.url');
-        }
-        $url = rtrim($url, '/');
+        $url = rtrim($this->stringConfig('talaria.url'), '/');
         if ($url === '') {
             return null;
         }

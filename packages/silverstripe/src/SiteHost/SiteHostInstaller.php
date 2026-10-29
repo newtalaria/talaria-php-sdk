@@ -26,7 +26,7 @@ final class SiteHostInstaller
         private readonly string $cronPath,
         private readonly string $supervisorPath,
         private readonly string $tokenPath,
-        private readonly string $dsn,
+        private readonly string $url,
         private readonly string $apiKey,
         private readonly CheckInTransport $transport,
         private readonly bool $probeOnly = false,
@@ -61,13 +61,18 @@ final class SiteHostInstaller
             throw new SiteHostInstallException('SITEHOST_APP_PATH is required');
         }
 
+        $url = trim((string) (getenv('TALARIA_URL') ?: ''));
+        if ($url === '') {
+            $url = 'https://ingest.newtalaria.com';
+        }
+
         return new self(
             $app,
             $app . '/talaria/sitehost/monitors.json',
             (string) (getenv('SITEHOST_CRONTAB') ?: '/container/crontabs/crontab'),
             (string) (getenv('SITEHOST_SUPERVISORD') ?: '/container/config/supervisord.conf'),
             $app . '/.talaria-monitor-tokens',
-            trim((string) (getenv('TALARIA_DSN') ?: getenv('TALARIA_BASE_URL') ?: '')),
+            $url,
             trim((string) (getenv('TALARIA_API_KEY') ?: '')),
             $transport ?? new PhpStreamCheckInTransport(),
             getenv('TALARIA_INSTALL_PROBE') === 'true',
@@ -96,7 +101,7 @@ final class SiteHostInstaller
         }
 
         if ($jobs !== []) {
-            $base = self::baseUrl($this->dsn);
+            $baseUrl = rtrim($this->url, '/');
             self::assertApiKey($this->apiKey);
             $tokens = $this->readTokens();
             foreach ($jobs as $job) {
@@ -104,11 +109,11 @@ final class SiteHostInstaller
                 if (($tokens[$slug] ?? '') !== '') {
                     continue;
                 }
-                $tokens[$slug] = $this->register($job, $base);
+                $tokens[$slug] = $this->register($job, $baseUrl);
                 $this->writeTokens($this->tokensForJobs($jobs, $tokens));
             }
             $existing = is_file($this->cronPath) ? (string) file_get_contents($this->cronPath) : '';
-            $cron = self::reconcileCrontab($existing, $jobs, $base, $tokens);
+            $cron = self::reconcileCrontab($existing, $jobs, $baseUrl, $tokens);
             $this->atomicWrite($this->cronPath, $cron, 0644);
         }
 
@@ -177,7 +182,7 @@ final class SiteHostInstaller
      */
     public static function reconcileCrontab(string $existing, array $jobs, string $baseUrl, array $tokens): string
     {
-        $baseUrl = self::baseUrl($baseUrl);
+        $baseUrl = rtrim($baseUrl, '/');
         $lines = self::splitLines($existing);
         $lines = self::stripManagedCron($lines);
         $lines = self::retireLegacy($lines, $jobs);
@@ -260,11 +265,12 @@ final class SiteHostInstaller
         if ($job['maxRuntimeSeconds'] !== null) {
             $schedule['maxRuntimeSeconds'] = $job['maxRuntimeSeconds'];
         }
-        $json = json_encode(MonitorCheckIn::payload($job['slug'], 'ok', $schedule));
+        $slug = $job['slug'];
+        $json = json_encode(MonitorCheckIn::payload($slug, 'ok', $schedule));
         if (!is_string($json)) {
-            throw new SiteHostInstallException('Could not encode the check-in for ' . $job['slug']);
+            throw new SiteHostInstallException('Could not encode the check-in for ' . $slug);
         }
-        $result = $this->transport->post($base . '/monitors/checkIn', $this->apiKey, $json);
+        $result = $this->transport->post($base . '/v1/monitors/' . rawurlencode($slug) . '/check-ins', $this->apiKey, $json);
         $token = self::monitorTokenFrom($result['body']);
         if (preg_match('/^tal_mon_[A-Za-z0-9]+$/', $token) !== 1) {
             throw new SiteHostInstallException(
@@ -326,19 +332,9 @@ final class SiteHostInstaller
 
     private static function assertApiKey(string $apiKey): void
     {
-        if ($apiKey === '') {
-            throw new SiteHostInstallException('Set TALARIA_DSN and TALARIA_API_KEY to register check-ins');
+        if ($apiKey === '' || !preg_match('/^tal_(prod|stg|test|dev)_[A-Za-z0-9_]{30,}$/', $apiKey)) {
+            throw new SiteHostInstallException('Set TALARIA_URL and TALARIA_API_KEY to register check-ins');
         }
-    }
-
-    private static function baseUrl(string $dsn): string
-    {
-        $base = rtrim(trim($dsn), '/');
-        if (preg_match('#^https?://[^\'\s]+$#', $base) !== 1) {
-            throw new SiteHostInstallException('Set TALARIA_DSN and TALARIA_API_KEY to register check-ins');
-        }
-
-        return $base;
     }
 
     /**
@@ -430,7 +426,7 @@ final class SiteHostInstaller
         string $url,
         string $slug,
     ): string {
-        $checkInUrl = $url . '/v1/check-ins';
+        $checkInUrl = $url . '/v1/monitors/' . rawurlencode($slug) . '/check-ins';
         $curl = "curl -fsS -m 15 -X POST -H 'X-Talaria-Monitor-Token: {$token}' -H 'Content-Type: application/json'";
 
         return $schedule . ' ' . $curl . " -d '{\"status\":\"in_progress\"}' '{$checkInUrl}'; "
