@@ -20,8 +20,8 @@ final class TalariaClientTest extends TestCase
     {
         $transport = new FakeTransport();
         $client = new TalariaClient([
-            'dsn' => 'https://api.example.com',
-            'apiKey' => 'tal_live_testkeytestkeytestkeytestkey123456',
+            'url' => 'https://api.example.com',
+            'apiKey' => 'tal_test_testkeytestkeytestkeytestkey123456',
             'defaultIntegrations' => false,
             'maxBatchSize' => 50,
             'flushIntervalMs' => 60_000,
@@ -41,8 +41,8 @@ final class TalariaClientTest extends TestCase
     {
         $transport = new FakeTransport();
         $client = new TalariaClient([
-            'dsn' => 'https://api.example.com',
-            'apiKey' => 'tal_live_testkeytestkeytestkeytestkey123456',
+            'url' => 'https://api.example.com',
+            'apiKey' => 'tal_test_testkeytestkeytestkeytestkey123456',
             'defaultIntegrations' => false,
             'maxBatchSize' => 1,
         ], $transport);
@@ -88,8 +88,8 @@ final class TalariaClientTest extends TestCase
     {
         $transport = new FakeTransport();
         $client = new TalariaClient([
-            'dsn' => 'https://api.example.com',
-            'apiKey' => 'tal_live_testkeytestkeytestkeytestkey123456',
+            'url' => 'https://api.example.com',
+            'apiKey' => 'tal_test_testkeytestkeytestkeytestkey123456',
             'defaultIntegrations' => false,
             'maxBatchSize' => 1,
         ], $transport);
@@ -105,8 +105,8 @@ final class TalariaClientTest extends TestCase
     {
         $transport = new FakeTransport();
         $client = new TalariaClient([
-            'dsn' => 'https://api.example.com',
-            'apiKey' => 'tal_live_testkeytestkeytestkeytestkey123456',
+            'url' => 'https://api.example.com',
+            'apiKey' => 'tal_test_testkeytestkeytestkeytestkey123456',
             'defaultIntegrations' => false,
             'maxBatchSize' => 1,
         ], $transport);
@@ -130,8 +130,8 @@ final class TalariaClientTest extends TestCase
     public function testFacadeInitAndCapture(): void
     {
         Talaria::init([
-            'dsn' => 'https://api.example.com',
-            'apiKey' => 'tal_live_testkeytestkeytestkeytestkey123456',
+            'url' => 'https://api.example.com',
+            'apiKey' => 'tal_test_testkeytestkeytestkeytestkey123456',
             'defaultIntegrations' => false,
             'sampleRate' => 0,
         ]);
@@ -147,8 +147,8 @@ final class TalariaClientTest extends TestCase
         self::assertTrue(class_exists(\Talaria\Client::class));
         $transport = new FakeTransport();
         $client = new \Talaria\Client([
-            'dsn' => 'https://api.example.com',
-            'apiKey' => 'tal_live_testkeytestkeytestkeytestkey123456',
+            'url' => 'https://api.example.com',
+            'apiKey' => 'tal_test_testkeytestkeytestkeytestkey123456',
             'defaultIntegrations' => false,
             'maxBatchSize' => 1,
         ], $transport);
@@ -159,8 +159,8 @@ final class TalariaClientTest extends TestCase
     {
         $transport = new FakeTransport();
         $client = new TalariaClient([
-            'dsn' => 'https://api.example.com',
-            'apiKey' => 'tal_live_testkeytestkeytestkeytestkey123456',
+            'url' => 'https://api.example.com',
+            'apiKey' => 'tal_test_testkeytestkeytestkeytestkey123456',
             'defaultIntegrations' => false,
             'maxBatchSize' => 1,
             'tags' => [
@@ -199,15 +199,15 @@ final class TalariaClientTest extends TestCase
     {
         $transport = new FakeTransport();
         $transport->failWith = new \Talaria\Exception\TransportException(
-            'Talaria events/ingestBatch failed: HTTP 400',
+            'Talaria /v1/events failed: HTTP 400',
             400,
             className: 'ApiUnauthorizedException',
             retry: false,
             bodyMessage: 'Invalid API key',
         );
         $client = new TalariaClient([
-            'dsn' => 'https://api.example.com',
-            'apiKey' => 'tal_live_deadkeydeadkeydeadkeydeadkey123456',
+            'url' => 'https://api.example.com',
+            'apiKey' => 'tal_test_deadkeydeadkeydeadkeydeadkey123456',
             'defaultIntegrations' => false,
             'maxBatchSize' => 1,
         ], $transport);
@@ -226,15 +226,15 @@ final class TalariaClientTest extends TestCase
     {
         $transport = new FakeTransport();
         $transport->failWith = new \Talaria\Exception\TransportException(
-            'Talaria events/ingestBatch failed: HTTP 400',
+            'Talaria /v1/events failed: HTTP 400',
             400,
             className: 'ApiConflictException',
             retry: true,
             bodyMessage: 'quota exceeded',
         );
         $client = new TalariaClient([
-            'dsn' => 'https://api.example.com',
-            'apiKey' => 'tal_live_testkeytestkeytestkeytestkey123456',
+            'url' => 'https://api.example.com',
+            'apiKey' => 'tal_test_testkeytestkeytestkeytestkey123456',
             'defaultIntegrations' => false,
             'maxBatchSize' => 1,
         ], $transport);
@@ -251,12 +251,12 @@ final class TalariaClientTest extends TestCase
     {
         $transport = new FakeTransport();
         $transport->failWith = new \Talaria\Exception\TransportException(
-            'Talaria events/ingestBatch failed: HTTP 503',
+            'Talaria /v1/events failed: HTTP 503',
             503,
         );
         $client = new TalariaClient([
-            'dsn' => 'https://api.example.com',
-            'apiKey' => 'tal_live_testkeytestkeytestkeytestkey123456',
+            'url' => 'https://api.example.com',
+            'apiKey' => 'tal_test_testkeytestkeytestkeytestkey123456',
             'defaultIntegrations' => false,
             'maxBatchSize' => 1,
         ], $transport);
@@ -272,7 +272,7 @@ final class TalariaClientTest extends TestCase
     {
         $transport = new FakeTransport();
         $transport->failWith = new \Talaria\Exception\TransportException(
-            'Talaria events/ingestBatch failed: HTTP 400',
+            'Talaria /v1/events failed: HTTP 400',
             400,
             className: 'ApiUnauthorizedException',
             retry: false,
@@ -280,8 +280,8 @@ final class TalariaClientTest extends TestCase
         );
         $spans = new FakeSpanTransport();
         $client = new TalariaClient([
-            'dsn' => 'https://api.example.com',
-            'apiKey' => 'tal_live_testkeytestkeytestkeytestkey123456',
+            'url' => 'https://api.example.com',
+            'apiKey' => 'tal_test_testkeytestkeytestkeytestkey123456',
             'defaultIntegrations' => false,
             'maxBatchSize' => 1,
         ], $transport, spanTransport: $spans);
@@ -303,8 +303,8 @@ final class TalariaClientTest extends TestCase
     {
         $transport = new FakeTransport();
         $client = new TalariaClient([
-            'dsn' => 'https://api.example.com',
-            'apiKey' => 'tal_live_testkeytestkeytestkeytestkey123456',
+            'url' => 'https://api.example.com',
+            'apiKey' => 'tal_test_testkeytestkeytestkeytestkey123456',
             'defaultIntegrations' => false,
             'tags' => ['service' => 'api'],
             'userId' => 'init-user',

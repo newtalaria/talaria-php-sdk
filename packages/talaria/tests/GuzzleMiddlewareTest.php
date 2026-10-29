@@ -69,7 +69,7 @@ final class GuzzleMiddlewareTest extends TestCase
 
         $root = $client->startTransaction('GET /page', SpanKind::Server);
         $http = new GuzzleClient(['handler' => $stack]);
-        $http->send(new Request('POST', 'https://api.example.com/spans/ingestBatch'));
+        $http->send(new Request('POST', 'https://api.example.com//v1/spans'));
         $root->end();
         $client->flush();
 
@@ -327,8 +327,8 @@ final class GuzzleMiddlewareTest extends TestCase
     private function client(FakeSpanTransport $spans, ?FakeTransport $events = null, float $sampleRate = 1.0): TalariaClient
     {
         $client = new TalariaClient([
-            'dsn' => 'https://api.example.com',
-            'apiKey' => 'tal_live_testkeytestkeytestkeytestkey123456',
+            'url' => 'https://api.example.com',
+            'apiKey' => 'tal_test_testkeytestkeytestkeytestkey123456',
             'defaultIntegrations' => false,
             'maxBatchSize' => 50,
             'flushIntervalMs' => 60_000,

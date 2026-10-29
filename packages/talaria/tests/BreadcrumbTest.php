@@ -31,8 +31,8 @@ final class BreadcrumbTest extends TestCase
         $transport = new FakeTransport();
         $spans = new FakeSpanTransport();
         $client = new TalariaClient([
-            'dsn' => 'https://api.example.com',
-            'apiKey' => 'tal_live_testkeytestkeytestkeytestkey123456',
+            'url' => 'https://api.example.com',
+            'apiKey' => 'tal_test_testkeytestkeytestkeytestkey123456',
             'defaultIntegrations' => false,
             'enableTracing' => true,
             'tracesSampleRate' => 1.0,
@@ -79,8 +79,8 @@ final class BreadcrumbTest extends TestCase
     {
         $transport = new FakeTransport();
         $client = new TalariaClient([
-            'dsn' => 'https://api.example.com',
-            'apiKey' => 'tal_live_testkeytestkeytestkeytestkey123456',
+            'url' => 'https://api.example.com',
+            'apiKey' => 'tal_test_testkeytestkeytestkeytestkey123456',
             'defaultIntegrations' => false,
             'maxBatchSize' => 1,
             'flushIntervalMs' => 60_000,

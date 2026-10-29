@@ -238,8 +238,8 @@ final class LoggerApiTest extends TestCase
     private function makeClient(FakeTransport $transport, array $overrides = []): TalariaClient
     {
         return new TalariaClient(array_merge([
-            'dsn' => 'https://api.example.com',
-            'apiKey' => 'tal_live_testkeytestkeytestkeytestkey123456',
+            'url' => 'https://api.example.com',
+            'apiKey' => 'tal_test_testkeytestkeytestkeytestkey123456',
             'defaultIntegrations' => false,
             'maxBatchSize' => 50,
             'flushIntervalMs' => 60_000,

@@ -25,7 +25,7 @@ final class GuzzleMiddleware
         return static function (callable $handler) use ($client): callable {
             return static function (RequestInterface $request, array $options) use ($handler, $client) {
                 $path = $request->getUri()->getPath();
-                if (str_contains($path, '/events/ingestBatch') || str_contains($path, '/spans/ingestBatch')) {
+                if (str_contains($path, '/v1/events') || str_contains($path, '/v1/spans') || str_contains($path, '/v1/analytics')) {
                     return $handler($request, $options);
                 }
 

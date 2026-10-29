@@ -46,7 +46,7 @@ final class ServerpodHttpTransportTest extends TestCase
         self::assertCount(1, $history);
         $request = $history[0]['request'];
         self::assertSame('POST', $request->getMethod());
-        self::assertSame('https://api.example.com/events/ingestBatch', (string) $request->getUri());
+        self::assertSame('https://api.example.com/v1/events', (string) $request->getUri());
         self::assertSame('tal_live_abc', $request->getHeaderLine('X-API-Key'));
 
         /** @var array<string, mixed> $body */

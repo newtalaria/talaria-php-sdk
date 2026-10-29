@@ -209,8 +209,8 @@ final class TracerTest extends TestCase
     {
         $spans = new FakeSpanTransport();
         $client = new TalariaClient([
-            'dsn' => 'https://api.example.com',
-            'apiKey' => 'tal_live_testkeytestkeytestkeytestkey123456',
+            'url' => 'https://api.example.com',
+            'apiKey' => 'tal_test_testkeytestkeytestkeytestkey123456',
             'defaultIntegrations' => false,
             'enableTracing' => true,
             'tracesSampleRate' => 0.0,
@@ -237,8 +237,8 @@ final class TracerTest extends TestCase
     private function client(FakeSpanTransport $spans): TalariaClient
     {
         $client = new TalariaClient([
-            'dsn' => 'https://api.example.com',
-            'apiKey' => 'tal_live_testkeytestkeytestkeytestkey123456',
+            'url' => 'https://api.example.com',
+            'apiKey' => 'tal_test_testkeytestkeytestkeytestkey123456',
             'defaultIntegrations' => false,
             'maxBatchSize' => 50,
             'flushIntervalMs' => 60_000,
