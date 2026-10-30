@@ -60,7 +60,7 @@
   "minimum-stability": "stable",
   "extra": {
     "branch-alias": {
-      "dev-main": "1.0-dev"
+      "dev-main": "3.x-dev"
     }
   }
 }

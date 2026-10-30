@@ -12,8 +12,10 @@ Laravel 10 / 11 / 12 adapter for [Talaria](https://www.newtalaria.com).
 PHP 8.1+ and Laravel 10, 11, or 12.
 
 ```bash
-composer require talaria/laravel
+composer require talaria/laravel:^3.0
 ```
+
+Upgrading from 2.x? 3.0 is a breaking release: `tal_live_` keys and `TALARIA_DSN` are gone. Use a `tal_sk_` key, and set `TALARIA_URL` only to override the host. See the [CHANGELOG](CHANGELOG.md). Update a published `config/talaria.php`: `dsn` and `browser_dsn` are now `url`, and `browser_api_key` must be a `tal_pk_` key.
 
 Set a secret key. Leave `TALARIA_URL` empty to use `https://ingest-<cell>.newtalaria.com` from that key:
 

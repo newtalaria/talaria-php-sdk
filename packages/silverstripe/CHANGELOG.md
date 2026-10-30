@@ -7,8 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.0.0] - 2026-10-30
+
 ### Changed
 
+- Breaking: requires `talaria/talaria` ^3.0. Keys, ingest host, routes, and auth follow the TIS hard cut in the core 3.0.0 changelog.
+- Breaking: `TALARIA_API_KEY` is a secret `tal_sk_` key. `tal_live_` keys are rejected.
+- Breaking: the `dsn` setting and `TALARIA_DSN` are removed, along with the cloud DSN default. The ingest host comes from the key's cell. YAML `url` or `TALARIA_URL` is the only override.
+- Breaking: the browser key is set with YAML `browser_api_key` (was `browserApiKey`) or `TALARIA_BROWSER_API_KEY`, and it must be a publishable `tal_pk_` key. The server key is never injected, so browser inject is skipped when no valid `tal_pk_` key is set.
+- Breaking: `browserDsn` and `TALARIA_BROWSER_DSN` are removed. The browser uses `TALARIA_URL` or the host derived from its key.
+- Breaking: SiteHost monitors register with `POST /v1/monitors/{slug}/check-ins` using the `tal_sk_` key. Cron lines and `talaria-sitehost-probe` check in with a `tal_mon_` token (was `tal_ping_`) on `POST /v1/check-ins` with `Authorization: Bearer`. `pingToken` is now `monitorToken`. Run `vendor/bin/talaria-sitehost install` again after upgrading.
 - SiteHost log collection moved to the deploy action. `vendor/bin/talaria-sitehost install` reconciles monitors and the probe only.
 
 ## [2.1.3] - 2026-10-09
@@ -111,6 +119,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - First release as `talaria/silverstripe` (Silverstripe 4.13+ / 5 / 6 vendormodule) depending on `talaria/talaria`.
 - Injector + Monolog (1/2 vs 3 handlers), browser SDK inject, request/MySQL/Guzzle/QueuedJobs tracing YAML.
 
+[3.0.0]: https://packagist.org/packages/talaria/silverstripe#3.0.0
 [1.1.1]: https://packagist.org/packages/talaria/silverstripe#1.1.1
 [1.1.0]: https://packagist.org/packages/talaria/silverstripe#1.1.0
 [1.0.0]: https://packagist.org/packages/talaria/silverstripe#1.0.0

@@ -11,10 +11,12 @@ Official Composer packages for [Talaria](https://www.newtalaria.com) — excepti
 Each adapter depends on the core package. You do not need to require `talaria/talaria` yourself when using Silverstripe or Laravel.
 
 ```bash
-composer require talaria/silverstripe
-composer require talaria/laravel
-composer require talaria/talaria
+composer require talaria/silverstripe:^3.0
+composer require talaria/laravel:^3.0
+composer require talaria/talaria:^3.0
 ```
+
+3.0 is a breaking release for the TIS hard cut: checksummed `tal_sk_` / `tal_pk_` keys, an ingest host derived from the key's cell, `TALARIA_URL` as the only override, no DSN, and a separate `TALARIA_BROWSER_API_KEY` (`tal_pk_` only) for the browser. See each package's CHANGELOG.
 
 Source: [github.com/newtalaria/talaria-php-sdk](https://github.com/newtalaria/talaria-php-sdk) · Dashboard: [one.newtalaria.com](https://one.newtalaria.com)
 
