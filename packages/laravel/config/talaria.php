@@ -18,6 +18,6 @@ return [
     // Inject @newtalaria/browser into HTML responses. Replay and heatmaps
     // still wait for the project config. Set TALARIA_BROWSER=false to skip.
     'browser' => filter_var(env('TALARIA_BROWSER', true), FILTER_VALIDATE_BOOLEAN),
-    'browser_sdk_version' => env('TALARIA_BROWSER_SDK_VERSION', '0.5.3'),
+    'browser_sdk_version' => env('TALARIA_BROWSER_SDK_VERSION', '0.6.0'),
     'browser_api_key' => env('TALARIA_BROWSER_API_KEY'),
 ];

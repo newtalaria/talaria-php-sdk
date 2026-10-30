@@ -170,7 +170,7 @@ final class LaravelPackageTest extends TestCase
             );
         });
         $html = (string) $response->getContent();
-        self::assertStringContainsString('@newtalaria/browser@0.5.3', $html);
+        self::assertStringContainsString('@newtalaria/browser@0.6.0', $html);
         self::assertStringContainsString('Talaria.init', $html);
         self::assertStringContainsString('publicAnalytics', $html);
         self::assertStringContainsString(\Talaria\Credential::example('pk'), $html);

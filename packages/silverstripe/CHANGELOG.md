@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.0.1] - 2026-10-30
+
+### Changed
+
+- The default `browserSdkVersion` is **0.6.0**. 0.6.0 is the browser SDK that takes the `tal_pk_` key and the key-derived ingest host that 3.0.0 sends.
+- The README describes the current release with no upgrade notes.
+
 ## [3.0.0] - 2026-10-30
 
 ### Changed

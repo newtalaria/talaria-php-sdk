@@ -41,7 +41,7 @@ final class BrowserScript
 
         $version = $this->stringConfig('talaria.browser_sdk_version');
         if ($version === '') {
-            $version = '0.5.3';
+            $version = '0.6.0';
         }
 
         $options = [
