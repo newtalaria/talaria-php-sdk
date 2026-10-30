@@ -1,5 +1,17 @@
 # Changelog
 
+## 3.0.0 - 2026-10-30
+
+Major release for the Talaria Ingest Spec (TIS) hard cut. There are no fallbacks for the 2.x key, host, or route formats.
+
+- Breaking: API keys are checksummed `tal_(pk|sk)_(prod|stg|test|dev)_<cell>_<43 base62><6 CRC32 base62>`. `tal_live_` keys are rejected, and a bad grammar or checksum throws at init. Servers use a secret `tal_sk_` key. A publishable `tal_pk_` key logs one warning: ingest and `POST /v1/flags/evaluate` work, but monitors, releases, and `GET /v1/flags` need a secret key.
+- Breaking: the `dsn` and `baseUrl` init options and `TALARIA_DSN` are removed. The ingest host comes from the key's cell (`https://ingest-<cell>.newtalaria.com`). The `url` option or `TALARIA_URL` is the only override. A `self` cell needs a URL. `Config::$baseUrl` is now `Config::$url`.
+- Breaking: requests send `Authorization: Bearer` instead of `X-API-Key`.
+- Breaking: the /v1 routes replace the Serverpod RPC routes. Batches go to `POST /v1/events`, `/v1/spans`, and `/v1/analytics` as plain JSON with no `input` wrapper. Remote config is `GET /v1/sdk-config`. Flags use `GET /v1/flags` and `POST /v1/flags/evaluate`. Discard reports go to `POST /v1/client-reports`.
+- Breaking: errors are parsed as `application/problem+json`. `IngestError` exposes `code` and `requestId`, and `TransportException` exposes `problemCode` and `requestId`, instead of `className`.
+- Breaking: `Talaria::monitor` checks in with `POST /v1/monitors/{slug}/check-ins`. Monitor tokens are `tal_mon_<cell>_…`.
+- `OTEL_SERVICE_NAME` and `OTEL_RESOURCE_ATTRIBUTES` are read into tags. Code and `TALARIA_*` values win over `OTEL_*`.
+
 ## 2.1.0 - 2026-10-09
 
 - `Talaria::monitor` sends `in_progress`, runs the callback, then `ok` or `error`, and posts `monitors/checkIn`. The API key needs `monitors:write`.

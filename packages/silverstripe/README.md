@@ -12,8 +12,10 @@ Silverstripe 4.13+ / 5 / 6 adapter for [Talaria](https://www.newtalaria.com).
 PHP 8.1+ and Silverstripe 4.13, 5, or 6.
 
 ```bash
-composer require talaria/silverstripe
+composer require talaria/silverstripe:^3.0
 ```
+
+Upgrading from 2.x? 3.0 is a breaking release: `tal_live_` keys and `TALARIA_DSN` are gone. Use a `tal_sk_` key, and set `TALARIA_URL` only to override the host. See the [CHANGELOG](CHANGELOG.md). The browser key moved from YAML `browserApiKey` to `browser_api_key` and must be a `tal_pk_` key.
 
 Set a secret key, then flush. Leave `TALARIA_URL` empty to use `https://ingest-<cell>.newtalaria.com` from that key:
 
