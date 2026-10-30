@@ -35,7 +35,7 @@ if client.enforceDefaultLevel:
 | Knob | Default | Role |
 | --- | --- | --- |
 | `minLevel` | `debug` (core) / `warning` (Silverstripe YAML) | Default/root for unset scopes; filters **direct** client captures |
-| `enforceDefaultLevel` | `false` | Opt-in hard floor (legacy `max()` safety) |
+| `enforceDefaultLevel` | `false` | Opt-in hard floor (`max()` of client and scope) |
 | Scoped `minLevel` | unset → inherit | Assigned override — may be higher **or** lower than root |
 | `sampleRate` → `beforeSend` | unchanged | After the level gate |
 
@@ -119,27 +119,6 @@ Talaria\SilverStripe\Config:
 ## Monolog (Approach A)
 
 The Talaria Monolog handler is **out of the hierarchy**. It only respects the **global default** `minLevel` (YAML / client). Per-area verbosity requires Approach B (`Talaria\Logger` or named presets).
-
----
-
-## Migration guide
-
-| Scenario | Action |
-| --- | --- |
-| No scoped `minLevel` | No change in volume |
-| Scoped `minLevel` stricter than client | Still works |
-| Scoped `minLevel` looser than client (previously ignored) | **Starts sending** — intended; set `enforceDefaultLevel: true` to refuse |
-| Want old global hard floor | `enforceDefaultLevel: true` |
-| Want warning default + info for one area | `minLevel: warning`, `enforceDefaultLevel: false`, named logger or `logger(['minLevel' => 'info'])` |
-| Monolog-only apps | Handler stays at global `minLevel`; use `Talaria\Logger` for per-area verbosity |
-| SS browser inject | Injected options now include `minLevel` / `enforceDefaultLevel` / `loggers` (may reduce browser volume vs the previous implicit browser `debug` when YAML said `warning`) |
-
-### Backwards-compatibility risks
-
-1. Scoped levels below client `minLevel` now emit when enforce is off (intentional).
-2. `withMinLevel` **assigns** instead of maxing with the parent — weakening after a raise works.
-3. Silverstripe default remains `warning` for unset scopes / Monolog.
-4. Direct client APIs still gated by `minLevel`.
 
 ---
 

@@ -1,5 +1,10 @@
 # Changelog
 
+## 3.0.1 - 2026-10-30
+
+- The injected browser script loads `@newtalaria/browser` 0.6.0 by default (`TALARIA_BROWSER_SDK_VERSION`). 0.6.0 is the browser SDK that takes the `tal_pk_` key and the key-derived ingest host that 3.0.0 sends.
+- The README describes the current release with no upgrade notes.
+
 ## 3.0.0 - 2026-10-30
 
 - Breaking: requires `talaria/talaria` ^3.0. Keys, ingest host, routes, and auth follow the TIS hard cut in the core 3.0.0 changelog.

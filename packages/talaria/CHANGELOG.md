@@ -1,5 +1,9 @@
 # Changelog
 
+## 3.0.1 - 2026-10-30
+
+- Docs only: the README and `docs/logging-levels.md` describe the current release with no upgrade or migration notes. No code changes.
+
 ## 3.0.0 - 2026-10-30
 
 Major release for the Talaria Ingest Spec (TIS) hard cut. There are no fallbacks for the 2.x key, host, or route formats.

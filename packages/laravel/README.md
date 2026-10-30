@@ -15,8 +15,6 @@ PHP 8.1+ and Laravel 10, 11, or 12.
 composer require talaria/laravel:^3.0
 ```
 
-Upgrading from 2.x? 3.0 is a breaking release: `tal_live_` keys and `TALARIA_DSN` are gone. Use a `tal_sk_` key, and set `TALARIA_URL` only to override the host. See the [CHANGELOG](CHANGELOG.md). Update a published `config/talaria.php`: `dsn` and `browser_dsn` are now `url`, and `browser_api_key` must be a `tal_pk_` key.
-
 Set a secret key. Leave `TALARIA_URL` empty to use `https://ingest-<cell>.newtalaria.com` from that key:
 
 ```env
@@ -29,7 +27,7 @@ TALARIA_RELEASE=1.4.2
 
 Do not call `Talaria::init()` yourself. Tracing and analytics follow Project settings. A malformed key fails fast. An empty key leaves the client disabled.
 
-HTML responses on the `web` middleware group load `@newtalaria/browser` from jsDelivr (`TALARIA_BROWSER_SDK_VERSION`, default `0.5.3`). Replay, heatmaps, and web vitals start only when the project allows them. Set `TALARIA_BROWSER=false` to skip the script. The injected key is `browser_api_key` (`TALARIA_BROWSER_API_KEY`) and must be a `tal_pk_` key. The server `tal_sk_` key is not injected.
+HTML responses on the `web` middleware group load `@newtalaria/browser` from jsDelivr (`TALARIA_BROWSER_SDK_VERSION`, default `0.6.0`). Replay, heatmaps, and web vitals start only when the project allows them. Set `TALARIA_BROWSER=false` to skip the script. The injected key is `browser_api_key` (`TALARIA_BROWSER_API_KEY`) and must be a `tal_pk_` key. The server `tal_sk_` key is not injected.
 
 ## License
 

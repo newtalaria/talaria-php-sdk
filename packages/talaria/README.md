@@ -18,8 +18,6 @@ PHP 8.1+.
 composer require talaria/talaria:^3.0
 ```
 
-Upgrading from 2.x? 3.0 is a breaking release: `tal_live_` keys and `TALARIA_DSN` are gone. Use a `tal_sk_` key, and set `TALARIA_URL` only to override the host. See the [CHANGELOG](CHANGELOG.md).
-
 ## Initialize
 
 ```php
