@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Silverstripe 6 no longer fatals on boot with `Declaration of Talaria\SilverStripe\InjectorFactory::create(...) must be compatible with SilverStripe\Core\Injector\Factory::create(string $service, array $params = []): ?object`. `InjectorFactory::create` now returns `TalariaClient` and `GuzzleClientFactory::create` returns `GuzzleHttp\Client`, which satisfies the typed Silverstripe 6 interface and the untyped Silverstripe 4 and 5 one. The fail-safe is unchanged: a bad key still gives a disabled client and one warning.
+- The adapter test suite runs on Monolog 1 as well as Monolog 3, and now covers each supported framework major (4, 5 and 6). The framework-less test stub matches the Silverstripe 6 `Factory` signature.
+
 ## [3.0.2] - 2026-11-03
 
 ### Fixed

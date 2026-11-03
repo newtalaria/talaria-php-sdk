@@ -4,26 +4,35 @@ declare(strict_types=1);
 
 namespace Talaria\Tests;
 
+use Monolog\Handler\AbstractProcessingHandler;
 use Monolog\Level;
+use Monolog\Logger;
 use Monolog\LogRecord;
 use PHPUnit\Framework\TestCase;
 use Talaria\Event;
 use Talaria\SilverStripe\Handlers\TalariaLogHandlerMonolog3;
+use Talaria\SilverStripe\Handlers\TalariaLogHandlerMonologLegacy;
 use Talaria\TalariaClient;
 use Talaria\Transport\TransportInterface;
 
+/**
+ * Runs against whichever Monolog major is installed: the Monolog 3 handler when
+ * {@see LogRecord} exists, the legacy array-record handler on Monolog 1/2.
+ * Loading the wrong handler file is a fatal error, so pick exactly one.
+ */
 final class LogHandlerUncaughtTest extends TestCase
 {
     public static function setUpBeforeClass(): void
     {
-        require_once dirname(__DIR__) . '/handlers/TalariaLogHandlerMonolog3.php';
+        $file = self::monolog3() ? 'TalariaLogHandlerMonolog3.php' : 'TalariaLogHandlerMonologLegacy.php';
+        require_once dirname(__DIR__) . '/handlers/' . $file;
     }
 
     public function testUncaughtLogIsOneUnhandledEvent(): void
     {
         $transport = new RecordingTransport();
         $client = $this->client($transport);
-        $handler = new TalariaLogHandlerMonolog3($client, Level::Debug);
+        $handler = $this->handler($client);
         $exception = new \RuntimeException('boom');
 
         $handler->handle($this->record(
@@ -41,7 +50,7 @@ final class LogHandlerUncaughtTest extends TestCase
     {
         $transport = new RecordingTransport();
         $client = $this->client($transport);
-        $handler = new TalariaLogHandlerMonolog3($client, Level::Debug);
+        $handler = $this->handler($client);
 
         $handler->handle($this->record('payment failed', new \RuntimeException('payment failed')));
 
@@ -61,15 +70,44 @@ final class LogHandlerUncaughtTest extends TestCase
         ], $transport);
     }
 
-    private function record(string $message, \Throwable $exception): LogRecord
+    private static function monolog3(): bool
     {
-        return new LogRecord(
-            new \DateTimeImmutable(),
-            'app',
-            Level::Error,
-            $message,
-            ['exception' => $exception],
-        );
+        return class_exists(LogRecord::class);
+    }
+
+    private function handler(TalariaClient $client): AbstractProcessingHandler
+    {
+        if (self::monolog3()) {
+            return new TalariaLogHandlerMonolog3($client, Level::Debug);
+        }
+
+        return new TalariaLogHandlerMonologLegacy($client, Logger::DEBUG);
+    }
+
+    /**
+     * @return LogRecord|array<string, mixed>
+     */
+    private function record(string $message, \Throwable $exception): LogRecord|array
+    {
+        if (self::monolog3()) {
+            return new LogRecord(
+                new \DateTimeImmutable(),
+                'app',
+                Level::Error,
+                $message,
+                ['exception' => $exception],
+            );
+        }
+
+        return [
+            'message' => $message,
+            'context' => ['exception' => $exception],
+            'level' => Logger::ERROR,
+            'level_name' => 'ERROR',
+            'channel' => 'app',
+            'datetime' => new \DateTimeImmutable(),
+            'extra' => [],
+        ];
     }
 }
 
