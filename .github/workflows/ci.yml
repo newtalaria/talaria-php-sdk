@@ -78,6 +78,49 @@ jobs:
       - name: PHPUnit
         run: composer test
 
+  silverstripe-framework:
+    # Real silverstripe/framework installs, one per supported major. Catches
+    # Injector Factory / middleware / extension signature drift (SS6 typed
+    # Factory::create). SS4/5 pin older PHPUnit majors because their
+    # nikic/php-parser and sebastian/diff pins rule out PHPUnit 11.
+    name: Silverstripe framework ${{ matrix.framework }} / PHP ${{ matrix.php }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - framework: "^4.13"
+            phpunit: "^10.5"
+            php: "8.2"
+          - framework: "^5"
+            phpunit: "^9.6"
+            php: "8.3"
+          - framework: "^6"
+            phpunit: "^11.0"
+            php: "8.4"
+    defaults:
+      run:
+        working-directory: packages/silverstripe
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: intl
+          coverage: none
+          tools: composer:v2
+      - name: Install with path core
+        run: |
+          composer config repositories.talaria path ../talaria
+          # Every SS4/SS5 release carries a Packagist security advisory; recent
+          # Composer refuses to install them unless advisory blocking is off.
+          composer config policy.advisories.block false
+          composer require --no-update "talaria/talaria:@dev" "silverstripe/framework:${{ matrix.framework }}"
+          composer require --dev --no-update "phpunit/phpunit:${{ matrix.phpunit }}"
+          composer update --prefer-dist --no-interaction --no-progress
+      - name: PHPUnit
+        run: composer test
+
   laravel:
     name: Laravel ${{ matrix.laravel }} / PHP ${{ matrix.php }}
     runs-on: ubuntu-latest

@@ -21,10 +21,15 @@ final class InjectorFactory implements Factory
     private static ?TalariaClient $client = null;
 
     /**
+     * The parameter stays untyped and the return type is the concrete client, so
+     * this matches the Factory interface on every supported framework major:
+     * Silverstripe 4/5 `create($service, array $params = [])` and Silverstripe 6
+     * `create(string $service, array $params = []): ?object`.
+     *
      * @param string $service
      * @param array<int|string, mixed> $params
      */
-    public function create($service, array $params = [])
+    public function create($service, array $params = []): TalariaClient
     {
         if (self::$client !== null) {
             return self::$client;

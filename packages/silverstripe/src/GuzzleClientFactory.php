@@ -23,7 +23,7 @@ final class GuzzleClientFactory implements Factory
      * @param string $service
      * @param array<int|string, mixed> $params
      */
-    public function create($service, array $params = [])
+    public function create($service, array $params = []): GuzzleClient
     {
         $config = [];
         if (isset($params['constructor'][0]) && is_array($params['constructor'][0])) {
