@@ -1,5 +1,9 @@
 # Changelog
 
+## 3.0.3 - 2026-11-03
+
+- Release 3.0.3.
+
 ## 3.0.2 - 2026-11-03
 
 - Fail safe: a missing, empty, malformed or wrong-checksum key, a `self` cell with no URL, or a bad init option no longer throws. The SDK builds a disabled client: every capture, log, span, analytics, flag, check-in and flush call does nothing and nothing is sent. One warning per process names the problem and shows at most the key's first 8 characters. Pass `onWarning` (callable) to send it to a framework logger, otherwise it goes to `error_log`. `TalariaClient::isEnabled()`, `Config::$enabled` and `Config::$disabledReason` report the state.

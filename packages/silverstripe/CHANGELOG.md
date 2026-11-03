@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.0.3] - 2026-11-03
+
 ### Fixed
 
 - Silverstripe 6 no longer fatals on boot with `Declaration of Talaria\SilverStripe\InjectorFactory::create(...) must be compatible with SilverStripe\Core\Injector\Factory::create(string $service, array $params = []): ?object`. `InjectorFactory::create` now returns `TalariaClient` and `GuzzleClientFactory::create` returns `GuzzleHttp\Client`, which satisfies the typed Silverstripe 6 interface and the untyped Silverstripe 4 and 5 one. The fail-safe is unchanged: a bad key still gives a disabled client and one warning.

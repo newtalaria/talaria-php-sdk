@@ -1,5 +1,9 @@
 # Changelog
 
+## 3.0.3 - 2026-11-03
+
+- Release 3.0.3.
+
 ## 3.0.2 - 2026-11-03
 
 - Fail safe: a malformed `TALARIA_API_KEY` (e.g. an old `tal_live_` key) no longer throws on boot. The client is disabled and no-op, and one warning goes to the Laravel log after boot. Any other fault while building the client also gives a disabled client. Requires `talaria/talaria` ^3.0.2.
