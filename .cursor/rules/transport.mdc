@@ -11,32 +11,25 @@ globs:
 
 Events:
 
-- `POST {baseUrl}/events/ingestBatch`
-- Header: `X-API-Key` only (no dual Authorization unless needed)
-- Body:
+- `POST {url}/v1/events`
+- Header: `Authorization: Bearer <tal_sk_ key>`
+- Body (plain JSON, no `input` wrapper):
 
 ```json
-{
-  "input": {
-    "__className__": "IngestEventBatchInput",
-    "events": [
-      { "__className__": "IngestEventInput", "message": "..." }
-    ]
-  }
-}
+{ "events": [ { "message": "..." } ] }
 ```
 
 Spans (when tracing is enabled):
 
-- `POST {baseUrl}/spans/ingestBatch`
-- Same `X-API-Key`
-- Body: `{ "input": { "__className__": "IngestSpanBatchInput", "spans": [ { "__className__": "IngestSpanInput", ... } ] } }`
+- `POST {url}/v1/spans`
+- Same Bearer header
+- Body: `{ "spans": [ { ... } ] }`
 - `SpanTransport` constructs its **own** Guzzle client. Do not install `GuzzleMiddleware` on ingest transports.
 
 Analytics (server-side; no autocapture, no cookie jar):
 
-- `POST {baseUrl}/analytics/ingestBatch`
-- Body: `{ "input": { "__className__": "IngestAnalyticsEventBatchInput", "events": [ { "__className__": "IngestAnalyticsEventInput", ... } ] } }`
+- `POST {url}/v1/analytics`
+- Body: `{ "events": [ { ... } ] }`
 - `AnalyticsTransport` constructs its **own** Guzzle client.
 - `track` requires `userId` and/or `anonymousId` (browser ids forwarded by the caller)
 - Core `enableAnalytics` defaults true; when false the facade no-ops. Silverstripe YAML / `TALARIA_ENABLE_ANALYTICS` defaults off.
@@ -62,6 +55,6 @@ PHP FPM has no background timer — age is checked on enqueue, not via a wall-cl
 
 - Short HTTP timeout (2–3s)
 - No unbounded retries; on 429 log warning and drop/backoff once
-- Transport failures must not crash the host app
+- Transport failures must not crash the host app. Queues catch every `\Throwable` from a transport; `checkIn`, `reportClient`, `flush` and flag loads swallow and log. Transport log lines go through `FailSafe::logRateLimited` (one per signal per minute)
 - Call `fastcgi_finish_request()` when available before shutdown network I/O
 - On ingest `retry: false` (or known permanent class names when `retry` is absent): drop the batch, log once, and disable events **and** spans **and** analytics for the rest of this PHP process. Message contains `lacks required scope` disables **that signal only**. Quota / rate-limit (`retry: true`) and 5xx must **not** disable. FPM workers reuse the singleton — a new worker after deploy picks up a rotated key.

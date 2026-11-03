@@ -121,10 +121,11 @@ final class TalariaClientTest extends TestCase
         self::assertSame(0, $transport->batchCount());
     }
 
-    public function testFacadeRequiresInit(): void
+    public function testFacadeBeforeInitIsNoOp(): void
     {
-        $this->expectException(\RuntimeException::class);
         Talaria::captureMessage('x');
+        Talaria::flush();
+        self::assertNull(Talaria::getClient());
     }
 
     public function testFacadeInitAndCapture(): void

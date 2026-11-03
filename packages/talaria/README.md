@@ -30,9 +30,9 @@ Talaria::init([
 ]);
 ```
 
-`TALARIA_API_KEY` is a secret `tal_sk_<env>_<cell>_<43 base62><6 CRC32 base62>` key. The SDK checks the grammar and checksum and refuses a bad key. A publishable `tal_pk_` key logs one warning: ingest and `POST /v1/flags/evaluate` work, but monitors, releases, and `GET /v1/flags` need a secret key.
+`TALARIA_API_KEY` is a secret `tal_sk_<env>_<cell>_<43 base62><6 CRC32 base62>` key. The SDK checks the grammar and checksum. A missing or bad key never throws: Talaria is disabled, every call is a no-op, and one warning is logged (at most the first 8 key characters). A publishable `tal_pk_` key logs one warning: ingest and `POST /v1/flags/evaluate` work, but monitors, releases, and `GET /v1/flags` need a secret key.
 
-Leave `url` unset and the SDK sends to `https://ingest-<cell>.newtalaria.com` from the key. Set `url` or `TALARIA_URL` to override. A `self` cell has no cloud host, so it fails fast until a URL is set.
+Leave `url` unset and the SDK sends to `https://ingest-<cell>.newtalaria.com` from the key. Set `url` or `TALARIA_URL` to override. A `self` cell has no cloud host, so Talaria stays disabled until a URL is set.
 
 Requests use `Authorization: Bearer`. Batches are plain JSON (`{"events":[…]}`, `{"spans":[…]}`) with no `input` wrapper. Errors are `application/problem+json`. Remote config is `GET /v1/sdk-config`. Discard reports go to `POST /v1/client-reports`.
 

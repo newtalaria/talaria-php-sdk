@@ -1,5 +1,9 @@
 # Changelog
 
+## 3.0.2 - 2026-11-03
+
+- Fail safe: a malformed `TALARIA_API_KEY` (e.g. an old `tal_live_` key) no longer throws on boot. The client is disabled and no-op, and one warning goes to the Laravel log after boot. Any other fault while building the client also gives a disabled client. Requires `talaria/talaria` ^3.0.2.
+
 ## 3.0.1 - 2026-10-30
 
 - The injected browser script loads `@newtalaria/browser` 0.6.0 by default (`TALARIA_BROWSER_SDK_VERSION`). 0.6.0 is the browser SDK that takes the `tal_pk_` key and the key-derived ingest host that 3.0.0 sends.

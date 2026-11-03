@@ -35,6 +35,10 @@ use Talaria\Transport\TransportInterface;
 
 /**
  * Talaria capture client — enqueues events for batch ingest.
+ *
+ * Fail safe: construction never throws. A missing or invalid key, or a bad
+ * init option, builds a disabled client whose methods do nothing and send
+ * nothing. One warning is logged per process (`onWarning` option, else error_log).
  */
 final class TalariaClient
 {
@@ -95,6 +99,9 @@ final class TalariaClient
     private array $processors = [];
 
     /**
+     * Options take `onWarning` (callable(string): void) to route the one
+     * "Talaria is disabled" warning to a framework logger.
+     *
      * @param array<string, mixed>|Config $options
      */
     public function __construct(
@@ -107,7 +114,24 @@ final class TalariaClient
         ?AnalyticsTransportInterface $analyticsTransport = null,
         ?AnalyticsQueue $analyticsQueue = null,
     ) {
-        $this->config = $options instanceof Config ? $options : new Config($options);
+        $this->config = self::buildConfig($options);
+        $enabled = $this->config->enabled;
+        if (!$enabled) {
+            $onWarning = is_array($options) && is_callable($options['onWarning'] ?? null)
+                ? $options['onWarning']
+                : null;
+            FailSafe::warnDisabledOnce(
+                $this->config->disabledReason ?? '[Talaria] Talaria is disabled.',
+                $onWarning,
+            );
+            // Nothing is sent, whatever was injected.
+            $transport = new NullTransport();
+            $spanTransport = new NullSpanTransport();
+            $analyticsTransport = new NullAnalyticsTransport();
+            $queue = null;
+            $spanQueue = null;
+            $analyticsQueue = null;
+        }
         $this->identity = new Identity(
             userId: $this->config->userId,
             anonymousId: $this->config->anonymousId,
@@ -142,15 +166,15 @@ final class TalariaClient
 
         $onError = function (TransportException $e): void {
             $this->handleTransportError($e, 'events');
-            error_log('[Talaria] ' . $e->getMessage());
+            FailSafe::logRateLimited('events', $e->getMessage());
         };
         $onSpanError = function (TransportException $e): void {
             $this->handleTransportError($e, 'spans');
-            error_log('[Talaria] ' . $e->getMessage());
+            FailSafe::logRateLimited('spans', $e->getMessage());
         };
         $onAnalyticsError = function (TransportException $e): void {
             $this->handleTransportError($e, 'analytics');
-            error_log('[Talaria] ' . $e->getMessage());
+            FailSafe::logRateLimited('analytics', $e->getMessage());
         };
 
         if ($analyticsTransport === null) {
@@ -201,6 +225,14 @@ final class TalariaClient
             fn (): ?\Talaria\Flags\FlagsHttpClient => $this->httpTransport,
         );
 
+        if (!$enabled) {
+            $this->eventsDisabled = true;
+            $this->analyticsDisabled = true;
+            $this->disableSpans();
+
+            return;
+        }
+
         if ($this->config->defaultIntegrations) {
             $this->errorIntegration = new ErrorIntegration($this);
             $this->errorIntegration->register();
@@ -213,6 +245,29 @@ final class TalariaClient
         if ($this->config->enableFlags) {
             $this->flags->maybeRefresh();
         }
+    }
+
+    /**
+     * @param array<string, mixed>|Config $options
+     */
+    private static function buildConfig(array|Config $options): Config
+    {
+        if ($options instanceof Config) {
+            return $options;
+        }
+        try {
+            return new Config($options);
+        } catch (\Throwable $e) {
+            return new Config([], '[Talaria] Init options are invalid: ' . $e->getMessage() . ' Talaria is disabled.');
+        }
+    }
+
+    /**
+     * False when the key is missing or invalid, or an init option is bad.
+     */
+    public function isEnabled(): bool
+    {
+        return $this->config->enabled;
     }
 
     private function bootstrapPolicy(ServerpodHttpTransport $transport): void
@@ -489,6 +544,21 @@ final class TalariaClient
         if ($this->closed || $this->eventsDisabled) {
             return;
         }
+        try {
+            $this->captureExceptionUnsafe($exception, $context, $respectMinLevel);
+        } catch (\Throwable $e) {
+            FailSafe::logRateLimited('capture', 'captureException failed: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * @param array<string, mixed> $context
+     */
+    private function captureExceptionUnsafe(
+        \Throwable $exception,
+        array $context,
+        bool $respectMinLevel,
+    ): void {
         if ($respectMinLevel && !SeverityLevel::Error->atLeast($this->minLevel)) {
             return;
         }
@@ -607,6 +677,22 @@ final class TalariaClient
         if ($this->closed || $this->eventsDisabled) {
             return;
         }
+        try {
+            $this->captureMessageUnsafe($message, $level, $context, $respectMinLevel);
+        } catch (\Throwable $e) {
+            FailSafe::logRateLimited('capture', 'captureMessage failed: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * @param array<string, mixed> $context
+     */
+    private function captureMessageUnsafe(
+        string $message,
+        string|SeverityLevel $level,
+        array $context,
+        bool $respectMinLevel,
+    ): void {
 
         $severity = SeverityLevel::tryFromMixed($level) ?? SeverityLevel::Info;
         if ($respectMinLevel && !$severity->atLeast($this->minLevel)) {
@@ -902,14 +988,19 @@ final class TalariaClient
     public function checkIn(string $slug, string $status, array $schedule = []): array
     {
         if ($this->httpTransport === null) {
-            throw new \RuntimeException('Talaria check-in requires the HTTP transport.');
+            return [];
         }
+        try {
+            return $this->httpTransport->postJson(
+                "v1/monitors/{$slug}/check-ins",
+                MonitorCheckIn::payload($slug, $status, $schedule),
+                max(2.0, $this->config->httpTimeoutSeconds),
+            );
+        } catch (\Throwable $e) {
+            FailSafe::logRateLimited('monitors', 'check-in failed: ' . $e->getMessage());
 
-        return $this->httpTransport->postJson(
-            "v1/monitors/{$slug}/check-ins",
-            MonitorCheckIn::payload($slug, $status, $schedule),
-            max(2.0, $this->config->httpTimeoutSeconds),
-        );
+            return [];
+        }
     }
 
     /**
@@ -922,10 +1013,14 @@ final class TalariaClient
         if ($this->httpTransport === null) {
             return;
         }
-        $this->httpTransport->postClientReport(
-            $report,
-            max(2.0, $this->config->httpTimeoutSeconds),
-        );
+        try {
+            $this->httpTransport->postClientReport(
+                $report,
+                max(2.0, $this->config->httpTimeoutSeconds),
+            );
+        } catch (\Throwable $e) {
+            FailSafe::logRateLimited('client-reports', 'client report failed: ' . $e->getMessage());
+        }
     }
 
     /**
@@ -959,12 +1054,16 @@ final class TalariaClient
         // Only finish the FCGI request when the HTTP response is already underway
         // (e.g. shutdown after output). Calling this mid-action before headers/body
         // are sent would close an empty response and drop the real reply.
-        if (function_exists('fastcgi_finish_request') && headers_sent()) {
-            @fastcgi_finish_request();
+        try {
+            if (function_exists('fastcgi_finish_request') && headers_sent()) {
+                @fastcgi_finish_request();
+            }
+            $this->queue->flush();
+            $this->spanQueue->flush();
+            $this->analyticsQueue->flush();
+        } catch (\Throwable $e) {
+            FailSafe::logRateLimited('flush', 'flush failed: ' . $e->getMessage());
         }
-        $this->queue->flush();
-        $this->spanQueue->flush();
-        $this->analyticsQueue->flush();
     }
 
     public function close(): void

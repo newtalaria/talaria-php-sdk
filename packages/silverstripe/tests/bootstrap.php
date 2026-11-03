@@ -15,3 +15,7 @@ if (!trait_exists(\SilverStripe\Core\Config\Configurable::class)) {
         $loader->activate();
     }
 }
+
+if (!interface_exists(\SilverStripe\Core\Injector\Factory::class)) {
+    require __DIR__ . '/support/injector_factory_stub.php';
+}

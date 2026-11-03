@@ -151,12 +151,18 @@ final class Flags
         }
         $transport = ($this->transport)();
         if ($transport === null) {
-            throw new \RuntimeException('Talaria flags transport unavailable');
+            return;
         }
-        $raw = $transport->getJson(
-            self::definitionsPath($keys),
-            max(0.5, $this->config->httpTimeoutSeconds),
-        );
+        try {
+            $raw = $transport->getJson(
+                self::definitionsPath($keys),
+                max(0.5, $this->config->httpTimeoutSeconds),
+            );
+        } catch (\Throwable $e) {
+            \Talaria\FailSafe::logRateLimited('flags', 'flag definitions load failed: ' . $e->getMessage());
+
+            return;
+        }
         $this->definitions = $this->parseDefinitions($raw);
         $this->localMode = true;
         $this->applyLocalEvaluations();

@@ -9,7 +9,16 @@ namespace Talaria;
  */
 final class Config
 {
+    /**
+     * False when the key is missing or invalid, or an init option is bad.
+     * A disabled config builds a no-op client that sends nothing.
+     */
+    public readonly bool $enabled;
+    /** Why Talaria is disabled, safe to log (at most 8 key characters). */
+    public readonly ?string $disabledReason;
+    /** Empty when disabled. */
     public readonly string $url;
+    /** Empty when disabled. */
     public readonly string $apiKey;
     public readonly ?string $release;
     public readonly ?string $commitSha;
@@ -69,7 +78,7 @@ final class Config
     /**
      * @param array{
      *   url?: string,
-     *   apiKey: string,
+     *   apiKey?: string|null,
      *   release?: string|null,
      *   commitSha?: string|null,
      *   sampleRate?: float|int,
@@ -92,27 +101,27 @@ final class Config
      *   enableAnalytics?: bool,
      * } $options
      */
-    public function __construct(array $options)
+    public function __construct(array $options, ?string $disabledReason = null)
     {
-        $apiKey = $options['apiKey'] ?? '';
-        if (!is_string($apiKey) || trim($apiKey) === '') {
-            throw new \InvalidArgumentException('Talaria init requires apiKey.');
-        }
-        $credential = Credential::parseApiKey($apiKey);
-        if ($credential->isPublishable()) {
-            Credential::warnPublishableOnce();
-        }
-
         $url = $options['url'] ?? null;
         if (!is_string($url) || trim($url) === '') {
             $url = self::getEnv('TALARIA_URL') ?? '';
         }
-        if (trim($url) === '') {
-            $url = $credential->ingestUrl();
+        $resolvedKey = '';
+        if ($disabledReason === null) {
+            [$resolvedKey, $url, $disabledReason] = self::resolveCredential($options['apiKey'] ?? null, $url);
         }
 
-        $this->url = rtrim($url, '/');
-        $this->apiKey = $credential->value;
+        $beforeSend = $options['beforeSend'] ?? null;
+        if ($beforeSend !== null && !is_callable($beforeSend)) {
+            $beforeSend = null;
+            $disabledReason ??= '[Talaria] The beforeSend option is not callable. Talaria is disabled.';
+        }
+
+        $this->enabled = $disabledReason === null;
+        $this->disabledReason = $disabledReason;
+        $this->url = $this->enabled ? rtrim($url, '/') : '';
+        $this->apiKey = $this->enabled ? $resolvedKey : '';
         $identity = ReleaseIdentity::resolve(
             isset($options['release']) && is_string($options['release']) ? $options['release'] : null,
             isset($options['commitSha']) && is_string($options['commitSha']) ? $options['commitSha'] : null,
@@ -149,10 +158,6 @@ final class Config
         $this->enforceDefaultLevel = (bool) ($options['enforceDefaultLevel'] ?? false);
         $this->loggers = self::normalizeLoggers($options['loggers'] ?? []);
 
-        $beforeSend = $options['beforeSend'] ?? null;
-        if ($beforeSend !== null && !is_callable($beforeSend)) {
-            throw new \InvalidArgumentException('Talaria beforeSend must be callable or null.');
-        }
         $this->beforeSend = $beforeSend;
         $this->ignoreErrors = EventFilters::normalizePatterns($options['ignoreErrors'] ?? []);
         $this->ignoreUrls = EventFilters::normalizePatterns($options['ignoreUrls'] ?? []);
@@ -166,10 +171,43 @@ final class Config
     }
 
     /**
+     * Parse the key and resolve the ingest URL. Never throws.
+     *
+     * @return array{0: string, 1: string, 2: ?string} [key, url, disabledReason]
+     */
+    private static function resolveCredential(mixed $apiKey, string $url): array
+    {
+        if (!is_string($apiKey) || trim($apiKey) === '') {
+            return ['', $url, '[Talaria] No API key is set (TALARIA_API_KEY). Talaria is disabled.'];
+        }
+        $preview = FailSafe::keyPreview($apiKey);
+        try {
+            $credential = Credential::parseApiKey($apiKey);
+        } catch (\InvalidArgumentException $e) {
+            return ['', $url, "[Talaria] The API key ({$preview}) is invalid: {$e->getMessage()} Talaria is disabled."];
+        }
+        if (trim($url) === '') {
+            try {
+                $url = $credential->ingestUrl();
+            } catch (\InvalidArgumentException $e) {
+                return ['', '', "[Talaria] The API key ({$preview}) has no ingest host: {$e->getMessage()} Talaria is disabled."];
+            }
+        }
+        if ($credential->isPublishable()) {
+            Credential::warnPublishableOnce();
+        }
+
+        return [$credential->value, $url, null];
+    }
+
+    /**
      * @param array<string, mixed> $document
      */
     public function applySdkDocument(array $document): void
     {
+        if (!$this->enabled) {
+            return;
+        }
         if (($document['schemaVersion'] ?? 1) !== 1) {
             return;
         }

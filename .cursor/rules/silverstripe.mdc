@@ -19,10 +19,10 @@ Depends on core `Talaria\TalariaClient` (PHP) and the published npm package [`@n
   - Never ship a generic `TalariaLogHandler` class (Injector/autoload will load it and fatal on the wrong Monolog)
   - Injector service id is `talariaLogHandler` (neutral) + factory; `_manifest_exclude` in `handlers/`
   - Shared logic in `LogHandlerSupport`
-- Config via YAML / env (`TALARIA_DSN`, `TALARIA_API_KEY`, …)
+- Config via YAML / env (`TALARIA_API_KEY`, optional `TALARIA_URL`, …). A missing or invalid key gives a disabled no-op client from `InjectorFactory`; it never throws
 - Capture Member id and request context when available
 - Do not put Silverstripe imports in `src/`
-- Same batch queue semantics as core SDK (`ingestBatch`)
+- Same batch queue semantics as core SDK (`/v1/events`, `/v1/spans`, `/v1/analytics`)
 - Filterable auto-tags: `platform=php`, `runtime=silverstripe`, `runtime_version`, plus per-request `ajax` / `ss_env` / `host` via `RequestTags` processor (not `setTags` on the singleton)
 - Core also emits `cli` and `php.version` via `RuntimeContext`
 - Optional YAML `service` / `tags` merge into init tags
@@ -35,11 +35,10 @@ Depends on core `Talaria\TalariaClient` (PHP) and the published npm package [`@n
 
 - Load **`@newtalaria/browser` from npm** via jsDelivr ESM (`cdn.jsdelivr.net/npm/@newtalaria/browser@{version}/+esm`)
 - Do **not** vendor or build from a local `sdks/javascript/browser` checkout for runtime
-- Pin version with `Talaria\SilverStripe\Config.browserSdkVersion` (default **0.5.0**)
+- Pin version with `Talaria\SilverStripe\Config.browserSdkVersion` (default **0.6.0**)
 - Inject via `RequirementsHelper` + `LeftAndMainExtension` / `FrontendExtension`
 - Config JSON is `window.__TALARIA_CONFIG__`; module script calls `Talaria.init` and assigns `window.Talaria`
-- Optional `browserDsn` / `TALARIA_BROWSER_DSN` for browser inject when PHP `dsn` is not browser-reachable (mixed content / Docker-internal hosts)
-- Optional `browserApiKey` / `TALARIA_BROWSER_API_KEY` for browser inject. When set, CMS and public pages use that `tal_live_` key (a different project from PHP). When unset, browser inject uses the PHP key. A non-empty value that is not a `tal_live_` key disables browser inject. Replay sample rates default to `0`
+- `browser_api_key` / `TALARIA_BROWSER_API_KEY` for browser inject. It must be a publishable `tal_pk_` key; the server `tal_sk_` key is never injected. Without a valid `tal_pk_` key the browser inject renders nothing. Replay sample rates default to `0`
 - Init tags: `platform=web`, `runtime=silverstripe-cms|silverstripe-frontend`, `runtime_version`, `ss_env`, `host`, optional `service` / `browserTags`, CMS `ss.section`
 - Init `userId` from current Member when logged in
 - CMS sets `inlineStylesheet: true` automatically; frontend defaults false; YAML `browserInlineStylesheet` overrides both

@@ -65,6 +65,11 @@ final class EventQueue
                     if ($this->onError !== null) {
                         ($this->onError)($e);
                     }
+                } catch (\Throwable $e) {
+                    // Encoding, client or other faults never reach the host app.
+                    if ($this->onError !== null) {
+                        ($this->onError)(new TransportException('Talaria batch send failed: ' . $e->getMessage(), null, $e));
+                    }
                     // Drop failed batch — no poison-pill retry loop in v1
                 }
             }

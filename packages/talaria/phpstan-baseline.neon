@@ -67,12 +67,6 @@ parameters:
 			path: src/TalariaClient.php
 
 		-
-			message: '#^Parameter \#1 \$options of class Talaria\\Config constructor expects array\{url\?\: string, apiKey\: string, release\?\: string\|null, commitSha\?\: string\|null, sampleRate\?\: float\|int, maxBatchSize\?\: int, flushIntervalMs\?\: int, defaultIntegrations\?\: bool, \.\.\.\}, array\<string, mixed\> given\.$#'
-			identifier: argument.type
-			count: 1
-			path: src/TalariaClient.php
-
-		-
 			message: '#^Using nullsafe method call on non\-nullable type Talaria\\Transport\\IngestError\. Use \-\> instead\.$#'
 			identifier: nullsafe.neverNull
 			count: 1
