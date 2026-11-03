@@ -23,7 +23,6 @@ use Talaria\Laravel\Log\TalariaLogChannel;
 use Talaria\Talaria;
 use Talaria\TalariaClient;
 use Talaria\Tracing\SpanTransportInterface;
-use Talaria\Transport\NullTransport;
 use Talaria\Transport\TransportInterface;
 
 final class TalariaServiceProvider extends ServiceProvider
@@ -33,65 +32,90 @@ final class TalariaServiceProvider extends ServiceProvider
         $this->mergeConfigFrom(__DIR__ . '/../config/talaria.php', 'talaria');
 
         $this->app->singleton(TalariaClient::class, function ($app): TalariaClient {
-            $config = $app['config']->get('talaria', []);
-            $url = is_string($config['url'] ?? null) ? $config['url'] : '';
-            $apiKey = is_string($config['api_key'] ?? null) ? $config['api_key'] : '';
-            $tags = [
-                'platform' => 'php',
-                'runtime' => 'laravel',
-            ];
-            $service = is_string($config['service'] ?? null) ? $config['service'] : '';
-            if ($service !== '') {
-                $tags['service'] = $service;
+            // Fail safe: a missing or invalid key, or any setup fault, gives a
+            // disabled no-op client. The app keeps serving; Talaria is off.
+            try {
+                $client = $this->buildClient($app);
+            } catch (\Throwable $e) {
+                $client = new TalariaClient(new Config(
+                    [],
+                    '[Talaria] Laravel client setup failed: ' . $e->getMessage() . ' Talaria is disabled.',
+                ));
             }
-            if ($this->app->version()) {
-                $tags['runtime_version'] = $this->app->version();
-            }
-
-            $options = [
-                'release' => is_string($config['release'] ?? null) && $config['release'] !== ''
-                    ? $config['release']
-                    : null,
-                'commitSha' => is_string($config['commit_sha'] ?? null) && $config['commit_sha'] !== ''
-                    ? $config['commit_sha']
-                    : null,
-                'minLevel' => is_string($config['min_level'] ?? null) ? $config['min_level'] : 'warning',
-                'sampleRate' => isset($config['sample_rate']) ? (float) $config['sample_rate'] : 1.0,
-                'enableTracing' => (bool) ($config['enable_tracing'] ?? false),
-                'tracesSampleRate' => isset($config['traces_sample_rate'])
-                    ? (float) $config['traces_sample_rate']
-                    : 0.1,
-                'defaultIntegrations' => false,
-                'tags' => Config::normalizeTags($tags),
-            ];
-            if ($url !== '') {
-                $options['url'] = $url;
-            }
-
-            $transport = $app->bound(TransportInterface::class)
-                ? $app->make(TransportInterface::class)
-                : null;
-            $spanTransport = $app->bound(SpanTransportInterface::class)
-                ? $app->make(SpanTransportInterface::class)
-                : null;
-
-            if ($apiKey === '') {
-                $options['apiKey'] = \Talaria\Credential::example('sk', 'dev', 'nz1');
-                $options['url'] = $options['url'] ?? 'https://ingest-nz1.newtalaria.com';
-                $options['remoteConfig'] = false;
-                $transport ??= new NullTransport();
-            } else {
-                \Talaria\Credential::parseApiKey($apiKey);
-                $options['apiKey'] = $apiKey;
-            }
-
-            $client = new TalariaClient($options, $transport, spanTransport: $spanTransport);
             Talaria::setClient($client);
 
             return $client;
         });
 
         $this->app->alias(TalariaClient::class, 'talaria');
+    }
+
+    /**
+     * @param \Illuminate\Contracts\Foundation\Application $app
+     */
+    private function buildClient($app): TalariaClient
+    {
+        $config = $app['config']->get('talaria', []);
+        $url = is_string($config['url'] ?? null) ? $config['url'] : '';
+        $apiKey = is_string($config['api_key'] ?? null) ? $config['api_key'] : '';
+        $tags = [
+            'platform' => 'php',
+            'runtime' => 'laravel',
+        ];
+        $service = is_string($config['service'] ?? null) ? $config['service'] : '';
+        if ($service !== '') {
+            $tags['service'] = $service;
+        }
+        if ($this->app->version()) {
+            $tags['runtime_version'] = $this->app->version();
+        }
+
+        $options = [
+            'release' => is_string($config['release'] ?? null) && $config['release'] !== ''
+                ? $config['release']
+                : null,
+            'commitSha' => is_string($config['commit_sha'] ?? null) && $config['commit_sha'] !== ''
+                ? $config['commit_sha']
+                : null,
+            'minLevel' => is_string($config['min_level'] ?? null) ? $config['min_level'] : 'warning',
+            'sampleRate' => isset($config['sample_rate']) ? (float) $config['sample_rate'] : 1.0,
+            'enableTracing' => (bool) ($config['enable_tracing'] ?? false),
+            'tracesSampleRate' => isset($config['traces_sample_rate'])
+                ? (float) $config['traces_sample_rate']
+                : 0.1,
+            'defaultIntegrations' => false,
+            'tags' => Config::normalizeTags($tags),
+        ];
+        if ($url !== '') {
+            $options['url'] = $url;
+        }
+
+        $transport = $app->bound(TransportInterface::class)
+            ? $app->make(TransportInterface::class)
+            : null;
+        $spanTransport = $app->bound(SpanTransportInterface::class)
+            ? $app->make(SpanTransportInterface::class)
+            : null;
+
+        $options['apiKey'] = $apiKey;
+        $options['onWarning'] = static function (string $message) use ($app): void {
+            // Log after boot so a `talaria` log channel never re-enters this singleton.
+            $write = static function () use ($app, $message): void {
+                try {
+                    $app->make('log')->warning($message);
+                } catch (\Throwable) {
+                    error_log($message);
+                }
+            };
+            if (method_exists($app, 'isBooted') && !$app->isBooted() && method_exists($app, 'booted')) {
+                $app->booted($write);
+
+                return;
+            }
+            $write();
+        };
+
+        return new TalariaClient($options, $transport, spanTransport: $spanTransport);
     }
 
     public function boot(): void

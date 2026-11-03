@@ -15,6 +15,8 @@ final class Talaria
 {
     private static ?TalariaClient $client = null;
 
+    private static ?TalariaClient $uninitialized = null;
+
     /**
      * @param array<string, mixed> $options
      */
@@ -27,6 +29,7 @@ final class Talaria
         }
 
         self::$client = new TalariaClient($options);
+        self::$uninitialized = null;
 
         return self::$client;
     }
@@ -295,14 +298,20 @@ final class Talaria
     {
         self::$client?->close();
         self::$client = null;
+        self::$uninitialized = null;
     }
 
+    /**
+     * Before init(), calls go to a disabled no-op client. They never throw.
+     */
     private static function requireClient(): TalariaClient
     {
-        if (self::$client === null) {
-            throw new \RuntimeException('Talaria::init() must be called before capturing events.');
+        if (self::$client !== null) {
+            return self::$client;
         }
 
-        return self::$client;
+        return self::$uninitialized ??= new TalariaClient(
+            new Config([], '[Talaria] Talaria::init() was not called. Talaria is disabled.'),
+        );
     }
 }

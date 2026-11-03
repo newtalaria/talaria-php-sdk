@@ -22,7 +22,7 @@ final class HttpMiddleware implements \SilverStripe\Control\Middleware\HTTPMiddl
     public function process(HTTPRequest $request, callable $delegate)
     {
         $client = self::client();
-        if ($client === null) {
+        if ($client === null || !$client->isEnabled()) {
             return $delegate($request);
         }
 

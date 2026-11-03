@@ -1,5 +1,11 @@
 # Changelog
 
+## 3.0.2 - 2026-11-03
+
+- Fail safe: a missing, empty, malformed or wrong-checksum key, a `self` cell with no URL, or a bad init option no longer throws. The SDK builds a disabled client: every capture, log, span, analytics, flag, check-in and flush call does nothing and nothing is sent. One warning per process names the problem and shows at most the key's first 8 characters. Pass `onWarning` (callable) to send it to a framework logger, otherwise it goes to `error_log`. `TalariaClient::isEnabled()`, `Config::$enabled` and `Config::$disabledReason` report the state.
+- Transport faults never reach the host app. Queues also catch non-transport errors (e.g. JSON encoding), `checkIn()` returns `[]` on failure, and `reportClient()`, `flush()`, `Flags::loadDefinitions()` and capture calls swallow and log. Transport error lines are rate-limited to one per signal per minute.
+- `Talaria::` facade calls before `init()` go to a disabled client instead of throwing.
+
 ## 3.0.1 - 2026-10-30
 
 - Docs only: the README and `docs/logging-levels.md` describe the current release with no upgrade or migration notes. No code changes.

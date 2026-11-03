@@ -11,13 +11,13 @@ Composer monorepo. Primary packages: `talaria/talaria` (core), `talaria/silverst
 
 ```
 App → TalariaClient
-        ├─ capture* / Logger     → EventQueue     → POST /events/ingestBatch
-        ├─ Tracer (optional APM) → SpanQueue      → POST /spans/ingestBatch
-        └─ analytics             → AnalyticsQueue → POST /analytics/ingestBatch
+        ├─ capture* / Logger     → EventQueue     → POST /v1/events
+        ├─ Tracer (optional APM) → SpanQueue      → POST /v1/spans
+        └─ analytics             → AnalyticsQueue → POST /v1/analytics
 ```
 
 - Fingerprinting and issue grouping are **server-side only** — never compute fingerprints here
-- Auth: project API key via `X-API-Key` (`tal_live_…`). Default app keys include `eventsWrite` + `spansWrite` + `analyticsWrite`
+- Auth: `Authorization: Bearer` with a checksummed `tal_(pk|sk)_<env>_<cell>_<43 base62><6 CRC32 base62>` key (`<env>` is `prod|stg|test|dev`). Servers use `tal_sk_`; the browser inject uses `tal_pk_`. The ingest host is `https://ingest-<cell>.newtalaria.com` unless `url` / `TALARIA_URL` is set
 - Always send via **batch** ingest; never one HTTP call per log or span in the normal path
 - Never wrap `ServerpodHttpTransport` or `SpanTransport` Guzzle clients with tracing middleware
 - No billing APIs; treat 429 carefully (quota vs rate limit)
@@ -43,8 +43,8 @@ App → TalariaClient
 
 ## Sources of truth
 
-- Live ingest: Talaria server `events/ingestBatch` and `spans/ingestBatch` (Serverpod RPC)
-- Parity reference: `@newtalaria/browser` transport (same camelCase + `__className__`)
+- Live ingest: Talaria `/v1` routes (`POST /v1/events`, `/v1/spans`, `/v1/analytics`, `GET /v1/sdk-config`, `/v1/flags`, `POST /v1/client-reports`). Plain JSON, no `input` wrapper; errors are `application/problem+json`
+- Parity reference: `@newtalaria/browser` transport (same camelCase wire fields)
 
 ## Tests at end of work
 
@@ -53,9 +53,21 @@ After any implementation, run PHPUnit in each touched package (`packages/talaria
 ## Explicit don'ts
 
 - Do not compute fingerprints
-- Do not call `events/ingest` for normal or flush paths — always `ingestBatch`
+- Do not send one HTTP call per event, span or analytics item — always batch
 - Do not retry unbounded on 429
 - Do not import Silverstripe or Laravel types from `packages/talaria/src/`
 - Do not pin `psr/log` to `^3` only (breaks SS4 and some SS5 resolves)
 - Do not Composer-autoload Monolog-specific handler classes
 - Do not type `Talaria\Logger::log()` `$message` / `$level` (breaks psr/log 1.x `LoggerInterface`)
+
+## Fail safe (Talaria workspace D19)
+
+Decided by Heath (2026-11-03): "having an invalid Talaria key shouldnt stop the site from building. It should just stop Talaria working". That is the default for every SDK. Full rule: `.cursor/skills/sdk-fail-safe/SKILL.md` in `dunatron/talaria-workspace`.
+
+- Init never throws. A missing, empty, malformed, wrong-checksum or revoked key, or any bad init option, builds a disabled no-op client. Every public method returns normally and sends nothing.
+- Log one warning per process, showing at most the key's first 8 characters.
+- Keep the key grammar strict. A parse failure disables Talaria. It is never an exception the host app sees.
+- Transport errors (4xx, 5xx, timeouts, DNS, TLS) never reach host code. Log them rate-limited.
+- Framework hooks (factories, providers, middleware, log handlers, error hooks) catch their own Talaria errors, so a Talaria fault never becomes a 500 or a crash.
+- Builds and install steps never fail because of Talaria.
+- Tests: no key, empty key, malformed key, wrong checksum and bad option each give no throw, a no-op client and one warning. Transport 401, 500 and timeout never reach the caller.

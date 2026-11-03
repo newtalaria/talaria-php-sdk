@@ -7,13 +7,14 @@ namespace Talaria\SilverStripe;
 use SilverStripe\Core\Injector\Factory;
 use Talaria\Config as SdkConfig;
 use Talaria\TalariaClient;
-use Talaria\Transport\NullTransport;
 
 /**
  * Builds a shared TalariaClient from YAML / environment config.
  *
- * When URL/API key are missing, returns a disabled client so Install / flush
- * does not crash before env vars are set.
+ * Fail safe: a missing or invalid TALARIA_API_KEY, or any fault while building
+ * the client, gives a disabled no-op client. The site keeps serving; Talaria is
+ * off and one warning goes to the PHP error log. (Not the Silverstripe logger:
+ * that logger's Talaria handler is built from this factory.)
  */
 final class InjectorFactory implements Factory
 {
@@ -29,23 +30,21 @@ final class InjectorFactory implements Factory
             return self::$client;
         }
 
-        $options = Config::toClientOptions();
-        $apiKey = is_string($options['apiKey'] ?? null) ? $options['apiKey'] : '';
-
-        if ($apiKey === '') {
-            error_log('[Talaria] Silverstripe client disabled — set TALARIA_API_KEY.');
-            self::$client = new TalariaClient(
-                [
-                    'url' => 'https://ingest-nz1.newtalaria.com',
-                    'apiKey' => \Talaria\Credential::example('sk', 'dev', 'nz1'),
-                    'defaultIntegrations' => false,
-                    'remoteConfig' => false,
-                ],
-                new NullTransport(),
-            );
-
-            return self::$client;
+        try {
+            self::$client = self::build();
+        } catch (\Throwable $e) {
+            self::$client = new TalariaClient(new SdkConfig(
+                [],
+                '[Talaria] Silverstripe client setup failed: ' . $e->getMessage() . ' Talaria is disabled.',
+            ));
         }
+
+        return self::$client;
+    }
+
+    private static function build(): TalariaClient
+    {
+        $options = Config::toClientOptions();
 
         $options['tags'] = array_merge(
             is_array($options['tags'] ?? null) ? $options['tags'] : [],
@@ -62,8 +61,11 @@ final class InjectorFactory implements Factory
 
         $options['tags'] = SdkConfig::normalizeTags($options['tags']);
 
-        self::$client = new TalariaClient($options);
-        self::$client->addProcessor(static function (array $bag): array {
+        $client = new TalariaClient($options);
+        if (!$client->isEnabled()) {
+            return $client;
+        }
+        $client->addProcessor(static function (array $bag): array {
             $tags = RequestTags::collect();
             $http = self::$client?->getTracer()->requestAttributes() ?? [];
             foreach (['http.route', 'http.request.method'] as $key) {
@@ -75,7 +77,7 @@ final class InjectorFactory implements Factory
             return ['tags' => $tags];
         });
 
-        return self::$client;
+        return $client;
     }
 
     /**

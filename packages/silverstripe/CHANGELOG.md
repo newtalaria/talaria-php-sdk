@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.0.2] - 2026-11-03
+
+### Fixed
+
+- A malformed `TALARIA_API_KEY` (e.g. an old `tal_live_` key) no longer makes every page return a 500. `InjectorFactory` builds a disabled no-op client, and any other fault while building the client does the same. One warning goes to the PHP error log, showing at most the key's first 8 characters. `HttpMiddleware` skips a disabled client. Requires `talaria/talaria` ^3.0.2.
+
 ## [3.0.1] - 2026-10-30
 
 ### Changed

@@ -77,11 +77,12 @@ final class CredentialTest extends TestCase
         self::assertSame('https://override.example.test', $fromEnv->url);
     }
 
-    public function testSelfCellFailsFastWithoutUrl(): void
+    public function testSelfCellWithoutUrlDisables(): void
     {
-        $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage('self');
-        new Config(['apiKey' => Credential::example('sk', 'test', 'self')]);
+        $config = new Config(['apiKey' => Credential::example('sk', 'test', 'self')]);
+        self::assertFalse($config->enabled);
+        self::assertSame('', $config->url);
+        self::assertStringContainsString('self', (string) $config->disabledReason);
     }
 
     public function testSelfCellAllowsExplicitUrl(): void
