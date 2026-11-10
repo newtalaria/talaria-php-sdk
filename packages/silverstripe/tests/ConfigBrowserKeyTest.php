@@ -49,6 +49,8 @@ final class ConfigBrowserKeyTest extends TestCase
             self::assertSame($pk, $frontend['apiKey']);
             self::assertSame($pk, $cms['apiKey']);
             self::assertSame('https://ingest.example.test', $frontend['url']);
+            self::assertArrayNotHasKey('dsn', $frontend);
+            self::assertArrayNotHasKey('dsn', $cms);
             self::assertSame(Credential::example(), Config::toClientOptions()['apiKey']);
         });
     }
@@ -97,6 +99,30 @@ final class ConfigBrowserKeyTest extends TestCase
             self::assertIsArray($browser);
             self::assertSame($pk, $browser['apiKey']);
             self::assertSame('https://ingest-eu1.newtalaria.com', $browser['url']);
+        });
+    }
+
+    public function testDefaultBrowserSdkVersionIs061(): void
+    {
+        $this->clearBrowserKeyEnv();
+        $this->withConfig(['browserSdkVersion' => null], function (): void {
+            self::assertSame('0.6.1', Config::browserSdkVersion());
+        });
+    }
+
+    public function testInvalidBrowserSdkVersionFallsBackTo061(): void
+    {
+        $this->clearBrowserKeyEnv();
+        $this->withConfig(['browserSdkVersion' => '0.6.1"><script>'], function (): void {
+            self::assertSame('0.6.1', Config::browserSdkVersion());
+        });
+    }
+
+    public function testPinnedBrowserSdkVersionIsKept(): void
+    {
+        $this->clearBrowserKeyEnv();
+        $this->withConfig(['browserSdkVersion' => '0.6.0'], function (): void {
+            self::assertSame('0.6.0', Config::browserSdkVersion());
         });
     }
 

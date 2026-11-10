@@ -69,7 +69,14 @@ CRON;
         self::assertStringContainsString('# talaria-sitehost retired * * * * * cd /container/application && vendor/bin/sake dev/tasks/ProcessJobQueueTask', $twice);
         self::assertStringContainsString('SomethingElse', $twice);
         self::assertDoesNotMatchRegularExpression('/^0 1 \* \* \* cd /m', $twice);
-        self::assertStringContainsString("https://ingest.newtalaria.com/v1/check-ins", $twice);
+        self::assertStringContainsString('https://ingest.newtalaria.com/v1/check-ins', $twice);
+        self::assertStringContainsString('Authorization: Bearer ', $twice);
+        self::assertStringContainsString("-d '{\"status\":\"in_progress\"}'", $twice);
+        self::assertStringContainsString("-d '{\"status\":\"ok\"}'", $twice);
+        self::assertStringContainsString("-d '{\"status\":\"error\"}'", $twice);
+        self::assertStringNotContainsString('X-Monitor-Token', $twice);
+        self::assertStringNotContainsString('/monitors/ping', $twice);
+        self::assertStringNotContainsString('/ingestBatch', $twice);
     }
 
     public function testExistingMonitorLinesFoldIntoOneBlock(): void
