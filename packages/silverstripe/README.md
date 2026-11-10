@@ -27,6 +27,8 @@ TALARIA_API_KEY="tal_sk_prod_nz1_…"
 vendor/bin/sake dev/build flush=1
 ```
 
+The injected browser SDK is `@newtalaria/browser` **0.6.1**. It takes the publishable `tal_pk_` key and an optional `url`; when `url` is omitted it uses `https://ingest-<cell>.newtalaria.com` from that key. Pin a different npm version with `Talaria\SilverStripe\Config.browserSdkVersion`.
+
 Optional YAML for log level, service name, and browser inject is in the [Silverstripe guide](https://www.newtalaria.com/docs/sdk/silverstripe). Tracing and analytics follow Project settings.
 
 ## SiteHost
