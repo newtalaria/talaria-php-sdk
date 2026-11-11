@@ -17,15 +17,20 @@ final class IngestBlockGate
     private ?string $reason = null;
     private bool $warned = false;
 
+    /** @var callable(): int */
+    private $clock;
+
+    /** @var (callable(string): void)|null */
+    private $warn;
+
     /**
-     * @param callable(): int $clock Unix time in seconds
+     * @param (callable(): int)|null $clock Unix time in seconds
      * @param (callable(string): void)|null $warn
      */
-    public function __construct(
-        private $clock = null,
-        private $warn = null,
-    ) {
-        $this->clock ??= static fn (): int => time();
+    public function __construct($clock = null, $warn = null)
+    {
+        $this->clock = $clock ?? static fn (): int => time();
+        $this->warn = $warn;
     }
 
     public static function clampRetryAfter(?int $seconds): int

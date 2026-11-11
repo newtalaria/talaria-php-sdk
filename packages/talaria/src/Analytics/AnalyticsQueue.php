@@ -31,6 +31,7 @@ final class AnalyticsQueue
     /**
      * @param ClockCallable|null $clock Returns unix time in seconds (fractional ok)
      * @param ErrorHandlerCallable|null $onError
+     * @param (callable(): bool)|null $isPaused
      */
     public function __construct(
         private readonly AnalyticsTransportInterface $transport,
