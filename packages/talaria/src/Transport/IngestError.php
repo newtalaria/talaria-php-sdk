@@ -18,6 +18,8 @@ final class IngestError
         public readonly ?string $requestId = null,
         public readonly ?string $cell = null,
         public readonly ?string $redirectUrl = null,
+        public readonly ?string $reason = null,
+        public readonly ?int $retryAfterSeconds = null,
     ) {
     }
 
@@ -38,6 +40,7 @@ final class IngestError
         $detail = self::stringOf($decoded['detail'] ?? $decoded['title'] ?? null);
         $retry = self::retryOf($code, $status);
 
+        $retryAfter = $decoded['retryAfterSeconds'] ?? null;
         return new self(
             message: $detail,
             retry: $retry,
@@ -46,6 +49,8 @@ final class IngestError
             requestId: self::stringOf($decoded['requestId'] ?? null),
             cell: self::stringOf($decoded['cell'] ?? null),
             redirectUrl: self::stringOf($decoded['url'] ?? null),
+            reason: self::stringOf($decoded['reason'] ?? null),
+            retryAfterSeconds: is_numeric($retryAfter) ? (int) $retryAfter : null,
         );
     }
 
@@ -54,7 +59,7 @@ final class IngestError
         if ($this->retry === true) {
             return false;
         }
-        if ($this->code === 'quota_exceeded' || $this->code === 'rate_limited') {
+        if ($this->code === 'quota_exceeded' || $this->code === 'rate_limited' || $this->code === 'ingest_blocked') {
             return false;
         }
         if ($this->status !== null && ($this->status === 429 || $this->status >= 500)) {
@@ -80,6 +85,16 @@ final class IngestError
         return $this->code === 'invalid_key' || $this->code === 'not_found';
     }
 
+    public function isIngestBlocked(): bool
+    {
+        return $this->code === 'ingest_blocked';
+    }
+
+    public function isForbiddenOrigin(): bool
+    {
+        return $this->code === 'forbidden_origin';
+    }
+
     public function disabledSignal(): ?string
     {
         if (!$this->isPermanent() || $this->isGlobalCredentialFailure() || $this->isScopeOnly()) {
@@ -101,7 +116,7 @@ final class IngestError
 
     private static function retryOf(?string $code, ?int $status): ?bool
     {
-        if ($code === 'quota_exceeded' || $code === 'rate_limited') {
+        if ($code === 'quota_exceeded' || $code === 'rate_limited' || $code === 'ingest_blocked') {
             return true;
         }
         if ($code !== null) {

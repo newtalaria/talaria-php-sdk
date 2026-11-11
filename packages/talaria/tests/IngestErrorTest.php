@@ -83,4 +83,35 @@ final class IngestErrorTest extends TestCase
         self::assertTrue($parsed->isPermanent());
         self::assertTrue($parsed->isGlobalCredentialFailure());
     }
+
+    public function testIngestBlockedIsNotPermanent(): void
+    {
+        $parsed = IngestError::parse(json_encode([
+            'status' => 402,
+            'code' => 'ingest_blocked',
+            'reason' => 'org_unpaid',
+            'retryAfterSeconds' => 900,
+            'detail' => 'Ingest is stopped for this organisation.',
+        ], JSON_THROW_ON_ERROR));
+
+        self::assertTrue($parsed->retry);
+        self::assertFalse($parsed->isPermanent());
+        self::assertTrue($parsed->isIngestBlocked());
+        self::assertSame('org_unpaid', $parsed->reason);
+        self::assertSame(900, $parsed->retryAfterSeconds);
+    }
+
+    public function testForbiddenOriginIsPermanent(): void
+    {
+        $parsed = IngestError::parse(json_encode([
+            'status' => 403,
+            'code' => 'forbidden_origin',
+            'detail' => 'Origin is not allowed',
+        ], JSON_THROW_ON_ERROR));
+
+        self::assertFalse($parsed->retry);
+        self::assertTrue($parsed->isPermanent());
+        self::assertTrue($parsed->isForbiddenOrigin());
+        self::assertFalse($parsed->isIngestBlocked());
+    }
 }

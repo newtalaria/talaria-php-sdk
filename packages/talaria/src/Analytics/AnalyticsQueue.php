@@ -25,6 +25,9 @@ final class AnalyticsQueue
     /** @var ErrorHandlerCallable|null */
     private $onError;
 
+    /** @var (callable(): bool)|null */
+    private $isPaused;
+
     /**
      * @param ClockCallable|null $clock Returns unix time in seconds (fractional ok)
      * @param ErrorHandlerCallable|null $onError
@@ -35,9 +38,11 @@ final class AnalyticsQueue
         private readonly int $flushIntervalMs = 2000,
         $clock = null,
         $onError = null,
+        $isPaused = null,
     ) {
         $this->clock = $clock ?? static fn (): float => microtime(true);
         $this->onError = $onError;
+        $this->isPaused = $isPaused;
     }
 
     public function enqueue(AnalyticsEvent $event): void
@@ -54,7 +59,7 @@ final class AnalyticsQueue
 
     public function flush(): void
     {
-        if ($this->draining || $this->buffer === []) {
+        if ($this->draining || $this->buffer === [] || $this->isPaused()) {
             return;
         }
 
@@ -86,6 +91,11 @@ final class AnalyticsQueue
     public function count(): int
     {
         return count($this->buffer);
+    }
+
+    private function isPaused(): bool
+    {
+        return $this->isPaused !== null && ($this->isPaused)();
     }
 
     private function shouldFlush(): bool

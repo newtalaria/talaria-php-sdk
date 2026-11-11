@@ -30,6 +30,8 @@ final class EventQueue
         private readonly int $flushIntervalMs = 2000,
         private $clock = null,
         private $onError = null,
+        /** @var (callable(): bool)|null */
+        private $isPaused = null,
     ) {
         $this->clock ??= static fn (): float => microtime(true);
     }
@@ -48,7 +50,7 @@ final class EventQueue
 
     public function flush(): void
     {
-        if ($this->draining || $this->buffer === []) {
+        if ($this->draining || $this->buffer === [] || $this->isPaused()) {
             return;
         }
 
@@ -81,6 +83,11 @@ final class EventQueue
     public function count(): int
     {
         return count($this->buffer);
+    }
+
+    private function isPaused(): bool
+    {
+        return $this->isPaused !== null && ($this->isPaused)();
     }
 
     private function shouldFlush(): bool

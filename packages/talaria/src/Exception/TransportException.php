@@ -20,6 +20,8 @@ final class TransportException extends \RuntimeException
         public readonly ?string $bodyMessage = null,
         public readonly ?string $problemCode = null,
         public readonly ?string $requestId = null,
+        public readonly ?string $reason = null,
+        public readonly ?int $retryAfterSeconds = null,
     ) {
         parent::__construct($message, 0, $previous);
     }
@@ -33,6 +35,8 @@ final class TransportException extends \RuntimeException
             code: $this->problemCode,
             status: $this->statusCode,
             requestId: $this->requestId,
+            reason: $this->reason,
+            retryAfterSeconds: $this->retryAfterSeconds,
         );
     }
 

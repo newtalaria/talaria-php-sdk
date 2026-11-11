@@ -74,6 +74,8 @@ final class SpanTransport implements SpanTransportInterface
                 bodyMessage: $parsed->message,
                 problemCode: $parsed->code,
                 requestId: $parsed->requestId,
+                reason: $parsed->reason,
+                retryAfterSeconds: $parsed->retryAfterSeconds,
             );
         }
 
@@ -93,6 +95,8 @@ final class SpanTransport implements SpanTransportInterface
             bodyMessage: $parsed->message,
             problemCode: $parsed->code,
             requestId: $parsed->requestId,
+            reason: $parsed->reason,
+            retryAfterSeconds: $parsed->retryAfterSeconds,
         );
     }
 

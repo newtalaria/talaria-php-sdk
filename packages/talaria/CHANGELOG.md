@@ -1,5 +1,11 @@
 # Changelog
 
+## [Unreleased]
+
+- IB3 ingest control: `ingest_blocked` is not a permanent failure. The SDK backs off for `retryAfterSeconds` (clamped 15 minutes to 24 hours), logs one warning, and does not send in between. `GET /v1/sdk-config` `ingestBlock` can pause or resume earlier. `forbidden_origin` is a permanent in-process stop. Queues hold their buffers while paused. The host app is never blocked or crashed.
+- New `IngestBlockGate`. `IngestError` and `TransportException` carry `reason` and `retryAfterSeconds`. `TalariaClient::isIngestBlocked()` reports the pause.
+
+
 ## 3.0.3 - 2026-11-03
 
 - Release 3.0.3.
