@@ -71,6 +71,8 @@ final class ServerpodHttpTransport implements TransportInterface, \Talaria\Flags
                 bodyMessage: $parsed->message,
                 problemCode: $parsed->code,
                 requestId: $parsed->requestId,
+                reason: $parsed->reason,
+                retryAfterSeconds: $parsed->retryAfterSeconds,
             );
         }
 
@@ -90,6 +92,8 @@ final class ServerpodHttpTransport implements TransportInterface, \Talaria\Flags
             bodyMessage: $parsed->message,
             problemCode: $parsed->code,
             requestId: $parsed->requestId,
+            reason: $parsed->reason,
+            retryAfterSeconds: $parsed->retryAfterSeconds,
         );
     }
 
@@ -150,6 +154,8 @@ final class ServerpodHttpTransport implements TransportInterface, \Talaria\Flags
                 bodyMessage: $parsed->message,
                 problemCode: $parsed->code,
                 requestId: $parsed->requestId,
+                reason: $parsed->reason,
+                retryAfterSeconds: $parsed->retryAfterSeconds,
             );
         }
         $decoded = json_decode($raw, true);

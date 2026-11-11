@@ -29,6 +29,7 @@ use Talaria\Tracing\SpanTransportInterface;
 use Talaria\Tracing\TraceContext;
 use Talaria\Tracing\Tracer;
 use Talaria\Transport\EventQueue;
+use Talaria\Transport\IngestBlockGate;
 use Talaria\Transport\NullTransport;
 use Talaria\Transport\ServerpodHttpTransport;
 use Talaria\Transport\TransportInterface;
@@ -56,6 +57,7 @@ final class TalariaClient
     private bool $spansDisabled = false;
     private bool $analyticsDisabled = false;
     private bool $loggedIngestDisable = false;
+    private readonly IngestBlockGate $blockGate;
     private ?ErrorIntegration $errorIntegration = null;
     private ?ServerpodHttpTransport $httpTransport = null;
 
@@ -115,6 +117,7 @@ final class TalariaClient
         ?AnalyticsQueue $analyticsQueue = null,
     ) {
         $this->config = self::buildConfig($options);
+        $this->blockGate = new IngestBlockGate();
         $enabled = $this->config->enabled;
         if (!$enabled) {
             $onWarning = is_array($options) && is_callable($options['onWarning'] ?? null)
@@ -187,12 +190,14 @@ final class TalariaClient
                 );
         }
 
+        $isPaused = fn (): bool => $this->blockGate->isBlocked();
         $this->queue = $queue ?? new EventQueue(
             $transport,
             $this->config->maxBatchSize,
             $this->config->flushIntervalMs,
             $clock,
             $onError,
+            $isPaused,
         );
 
         $this->spanQueue = $spanQueue ?? new SpanQueue(
@@ -201,6 +206,7 @@ final class TalariaClient
             $this->config->flushIntervalMs,
             $clock,
             $onSpanError,
+            $isPaused,
         );
 
         $this->analyticsQueue = $analyticsQueue ?? new AnalyticsQueue(
@@ -209,6 +215,7 @@ final class TalariaClient
             $this->config->flushIntervalMs,
             $clock,
             $onAnalyticsError,
+            $isPaused,
         );
 
         $this->tracer = new Tracer($this->config, $this->spanQueue, $this->identity);
@@ -283,11 +290,13 @@ final class TalariaClient
             $ttl = max(60, min(3600, $ttl));
             if ((time() - (int) $cached['fetchedAt']) < $ttl) {
                 $this->config->applySdkDocument($cached['document']);
+                $this->blockGate->applyFromDocument($cached['document']['ingestBlock'] ?? null);
                 $this->flags->setPollIntervalSeconds($ttl);
 
                 return;
             }
             $this->config->applySdkDocument($cached['document']);
+            $this->blockGate->applyFromDocument($cached['document']['ingestBlock'] ?? null);
             $this->flags->setPollIntervalSeconds($ttl);
         }
         try {
@@ -305,9 +314,13 @@ final class TalariaClient
             $document = $transport->getJson('v1/sdk-config?' . http_build_query($query), 0.2);
             if (($document['unchanged'] ?? false) !== true) {
                 $this->config->applySdkDocument($document);
+                $this->blockGate->applyFromDocument($document['ingestBlock'] ?? null);
                 $stored = $document;
             } else {
                 $stored = is_array($cached['document'] ?? null) ? $cached['document'] : null;
+                if (is_array($stored)) {
+                    $this->blockGate->applyFromDocument($stored['ingestBlock'] ?? null);
+                }
             }
             if (is_array($stored)) {
                 $ttl = max(60, min(3600, (int) ($stored['ttlSeconds'] ?? 300)));
@@ -1103,11 +1116,19 @@ final class TalariaClient
         return $this->analyticsDisabled;
     }
 
+    public function isIngestBlocked(): bool
+    {
+        return $this->blockGate->isBlocked();
+    }
+
     /**
      * @param 'events'|'spans'|'analytics' $signal
      */
     private function handleTransportError(TransportException $error, string $signal): void
     {
+        if ($this->blockGate->applyFromError($error->ingestError())) {
+            return;
+        }
         if (!$error->isPermanent()) {
             return;
         }

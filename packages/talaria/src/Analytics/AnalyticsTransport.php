@@ -77,6 +77,8 @@ final class AnalyticsTransport implements AnalyticsTransportInterface
                 bodyMessage: $parsed->message,
                 problemCode: $parsed->code,
                 requestId: $parsed->requestId,
+                reason: $parsed->reason,
+                retryAfterSeconds: $parsed->retryAfterSeconds,
             );
         }
 
@@ -96,6 +98,8 @@ final class AnalyticsTransport implements AnalyticsTransportInterface
             bodyMessage: $parsed->message,
             problemCode: $parsed->code,
             requestId: $parsed->requestId,
+            reason: $parsed->reason,
+            retryAfterSeconds: $parsed->retryAfterSeconds,
         );
     }
 
