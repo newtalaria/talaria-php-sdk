@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.0.4] - 2026-11-11
+
+### Changed
+
+- The default `browserSdkVersion` is **0.6.1**. `@newtalaria/browser` 0.6.1 is the fail-safe release: a missing or invalid `tal_pk_` key, or a transport error, disables Talaria with one warning and never throws. Init still takes `apiKey` and optional `url` (otherwise `https://ingest-<cell>.newtalaria.com` from the key). There is no `dsn`.
+
 ## [3.0.3] - 2026-11-03
 
 ### Fixed
