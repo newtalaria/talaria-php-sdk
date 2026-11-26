@@ -150,7 +150,13 @@ final class Span
 
     /**
      * Fold another successful execution of the same SQL into this span.
-     * The bar stays the slower run. Count and summed SQL time live on attributes.
+     *
+     * The span's own window becomes the group's wall-time envelope (first
+     * start to last end), the convention Sentry and Datadog use for grouped
+     * spans, so any OTel viewer draws the group where it really ran. The
+     * per-run facts ride on attributes:
+     * `db.query.count`, `db.query.duration_sum_ms` (summed SQL time),
+     * `db.query.slowest_ms`, `db.query.first_start` and `db.query.last_end`.
      */
     public function absorbExecution(self $execution): void
     {
@@ -165,15 +171,39 @@ final class Span
         $sum = isset($this->attributes['db.query.duration_sum_ms'])
             ? (float) $this->attributes['db.query.duration_sum_ms']
             : $own;
+        $slowest = isset($this->attributes['db.query.slowest_ms'])
+            ? (float) $this->attributes['db.query.slowest_ms']
+            : $own;
         $extra = $execution->durationMs();
+
+        $first = $this->startTime;
+        $last = $this->endTime ?? $this->startTime;
+        $executionEnd = $execution->endTime ?? $execution->startTime;
+        if (self::isBefore($execution->startTime, $first)) {
+            $first = $execution->startTime;
+        }
+        if (self::isBefore($last, $executionEnd)) {
+            $last = $executionEnd;
+        }
+
         $this->attributes['db.query.count'] = (string) ($count + 1);
         $this->attributes['db.query.duration_sum_ms'] = self::formatMs($sum + $extra);
-        if ($extra > $own) {
-            $this->startTime = $execution->startTime;
-            if ($execution->endTime !== null) {
-                $this->endTime = $execution->endTime;
-            }
+        $this->attributes['db.query.slowest_ms'] = self::formatMs(max($slowest, $extra));
+        $this->attributes['db.query.first_start'] = $first;
+        $this->attributes['db.query.last_end'] = $last;
+        $this->startTime = $first;
+        $this->endTime = $last;
+    }
+
+    private static function isBefore(string $a, string $b): bool
+    {
+        $left = self::unixMs($a);
+        $right = self::unixMs($b);
+        if ($left === null || $right === null) {
+            return strcmp($a, $b) < 0;
         }
+
+        return $left < $right;
     }
 
     public function end(?string $endTime = null): void

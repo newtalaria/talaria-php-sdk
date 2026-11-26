@@ -1,7 +1,8 @@
 # Changelog
 
-## [Unreleased]
+## 3.1.0 - Unreleased
 
+- Grouped query spans now cover the group's wall time. When repeats of the same SQL under one parent fold into one span, the span runs from the first execution's start to the last execution's end, the convention Sentry and Datadog use. Before, it showed only the slowest run, so trace viewers drew a tiny bar and left the other runs as unexplained gaps. New attributes: `db.query.slowest_ms`, `db.query.first_start` and `db.query.last_end` (ISO 8601 UTC). `db.query.count` and `db.query.duration_sum_ms` (summed SQL time) are unchanged.
 - IB3 ingest control: `ingest_blocked` is not a permanent failure. The SDK backs off for `retryAfterSeconds` (clamped 15 minutes to 24 hours), logs one warning, and does not send in between. `GET /v1/sdk-config` `ingestBlock` can pause or resume earlier. `forbidden_origin` is a permanent in-process stop. Queues hold their buffers while paused. The host app is never blocked or crashed.
 - New `IngestBlockGate`. `IngestError` and `TransportException` carry `reason` and `retryAfterSeconds`. `TalariaClient::isIngestBlocked()` reports the pause.
 

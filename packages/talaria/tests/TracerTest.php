@@ -89,6 +89,42 @@ final class TracerTest extends TestCase
         self::assertArrayNotHasKey('dropped_span_count', $spans->allSpans()[0]->toWire()['attributes'] ?? []);
     }
 
+    public function testGroupedQuerySpansTheWallTimeEnvelope(): void
+    {
+        $spans = new FakeSpanTransport();
+        $client = $this->client($spans);
+        $root = $client->startTransaction('GET /terms', SpanKind::Server);
+        $sql = 'SELECT File';
+        $base = (int) floor(microtime(true) * 1000) - 1000;
+        // Three runs: 2 ms at +0, 5 ms at +40, 1 ms at +90.
+        foreach ([[0, 2], [40, 5], [90, 1]] as [$at, $ms]) {
+            $query = $client->startSpan('SELECT File', SpanKind::Client, ['db.query.text' => $sql]);
+            $query->reviseWindow(
+                RuntimeContext::isoFromUnixMs($base + $at),
+                RuntimeContext::isoFromUnixMs($base + $at + $ms),
+            );
+            $query->setStatus(SpanStatus::Ok);
+            $query->end(RuntimeContext::isoFromUnixMs($base + $at + $ms));
+        }
+        $root->end();
+        $client->flush();
+
+        $queries = array_values(array_filter(
+            $spans->allSpans(),
+            static fn ($span) => $span->name === 'SELECT File',
+        ));
+        self::assertCount(1, $queries);
+        $wire = $queries[0]->toWire();
+        $attributes = $wire['attributes'];
+        self::assertSame('3', $attributes['db.query.count']);
+        self::assertSame('8', $attributes['db.query.duration_sum_ms']);
+        self::assertSame('5', $attributes['db.query.slowest_ms']);
+        self::assertSame(RuntimeContext::isoFromUnixMs($base), $attributes['db.query.first_start']);
+        self::assertSame(RuntimeContext::isoFromUnixMs($base + 91), $attributes['db.query.last_end']);
+        self::assertSame(RuntimeContext::isoFromUnixMs($base), $queries[0]->startTime);
+        self::assertSame(91.0, $queries[0]->durationMs());
+    }
+
     public function testSlowAndFailedQueriesStayTheirOwnSpans(): void
     {
         $spans = new FakeSpanTransport();
